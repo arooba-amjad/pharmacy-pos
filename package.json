@@ -1,7 +1,7 @@
 {
   "name": "pharmacy",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Pharmacy POS — desktop demo (inventory, sales, purchases, suppliers, settings).",
   "author": "Pharmacy",
   "main": "dist-electron/main.js",
@@ -30,8 +30,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "YOUR_GITHUB_USERNAME",
-        "repo": "YOUR_REPO_NAME"
+        "owner": "arooba-amjad",
+        "repo": "pharmacy-pos"
       }
     ],
     "files": [
@@ -45,8 +45,6 @@
     ],
     "win": {
       "signAndEditExecutable": true,
-      "certificateSubjectName": "${env.WIN_CSC_SUBJECT_NAME}",
-      "publisherName": "${env.WIN_PUBLISHER_NAME}",
       "target": [
         {
           "target": "nsis",
