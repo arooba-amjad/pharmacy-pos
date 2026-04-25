@@ -1,0 +1,111 @@
+{
+  "name": "pharmacy",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Pharmacy POS — desktop demo (inventory, sales, purchases, suppliers, settings).",
+  "author": "Pharmacy",
+  "main": "dist-electron/main.js",
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/ensure-sqlite-for-electron.mjs",
+    "dev": "vite",
+    "db:bootstrap": "node backend/bootstrap-db.mjs",
+    "build": "tsc -b && vite build && electron-builder",
+    "build:exe": "tsc -b && vite build && electron-builder --win nsis",
+    "build:win": "tsc -b && vite build && electron-builder --win nsis",
+    "release:win": "npm run build:win && electron-builder --publish always",
+    "postinstall": "node scripts/ensure-sqlite-for-electron.mjs",
+    "rebuild:electron": "node scripts/ensure-sqlite-for-electron.mjs --force",
+    "rebuild:node": "npm rebuild better-sqlite3 && node scripts/clear-electron-sqlite-stamp.mjs",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.pharmacy.pos",
+    "productName": "PharmacyPOS",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "YOUR_GITHUB_USERNAME",
+        "repo": "YOUR_REPO_NAME"
+      }
+    ],
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "backend/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/better-sqlite3/**"
+    ],
+    "win": {
+      "signAndEditExecutable": true,
+      "certificateSubjectName": "${env.WIN_CSC_SUBJECT_NAME}",
+      "publisherName": "${env.WIN_PUBLISHER_NAME}",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.17",
+    "better-sqlite3": "^12.9.0",
+    "clsx": "^2.1.1",
+    "cors": "^2.8.6",
+    "date-fns": "^4.1.0",
+    "electron-updater": "^6.6.2",
+    "express": "^5.2.1",
+    "framer-motion": "^12.38.0",
+    "jspdf": "^4.2.1",
+    "lucide-react": "^1.8.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "recharts": "^3.8.1",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.3.6",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/adm-zip": "^0.5.8",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.12.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.5.0",
+    "electron": "^41.2.1",
+    "electron-builder": "^26.8.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "postcss": "^8.5.10",
+    "postcss-load-config": "^6.0.1",
+    "tailwindcss": "^4.2.2",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.58.0",
+    "vite": "^6.1.0",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.5"
+  }
+}
