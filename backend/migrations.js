@@ -30,7 +30,34 @@ export const MIGRATIONS = [
       db.exec(sql);
     },
   },
-  // Add { version: 2, up(db) { ... } } for future ALTERs / new tables.
+  {
+    version: 2,
+    description: 'Add app_users table for local desktop authentication',
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS app_users (
+          id TEXT PRIMARY KEY,
+          username TEXT NOT NULL UNIQUE,
+          email TEXT NOT NULL UNIQUE,
+          password_hash TEXT NOT NULL,
+          password_salt TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    },
+  },
+  {
+    version: 3,
+    description: 'Add tax column to sales for persisted invoice totals',
+    up(db) {
+      const cols = db.prepare("PRAGMA table_info('sales')").all();
+      const hasTax = cols.some((c) => String(c.name).toLowerCase() === 'tax');
+      if (!hasTax) {
+        db.exec('ALTER TABLE sales ADD COLUMN tax REAL NOT NULL DEFAULT 0;');
+      }
+    },
+  },
 ];
 
 /**

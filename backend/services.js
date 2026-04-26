@@ -203,8 +203,8 @@ export function createSale(payload) {
     let subtotal = 0;
 
     db.prepare(
-      `INSERT INTO sales (id, customer_name, payment_method, subtotal, discount, total, created_at)
-       VALUES (?, ?, ?, 0, 0, 0, ?)`
+      `INSERT INTO sales (id, customer_name, payment_method, subtotal, discount, tax, total, created_at)
+       VALUES (?, ?, ?, 0, 0, 0, 0, ?)`
     ).run(saleId, String(payload.customerName ?? ''), String(payload.paymentMethod ?? 'cash'), nowIso());
 
     for (const line of payload.items) {
@@ -302,8 +302,15 @@ export function createSale(payload) {
     }
 
     const discount = Math.min(ensureNonNegative(payload.discount ?? 0, 'discount'), subtotal);
-    const total = Math.max(0, subtotal - discount);
-    db.prepare('UPDATE sales SET subtotal = ?, discount = ?, total = ? WHERE id = ?').run(subtotal, discount, total, saleId);
+    const tax = ensureNonNegative(payload.tax ?? 0, 'tax');
+    const total = Math.max(0, subtotal + tax - discount);
+    db.prepare('UPDATE sales SET subtotal = ?, discount = ?, tax = ?, total = ? WHERE id = ?').run(
+      subtotal,
+      discount,
+      tax,
+      total,
+      saleId
+    );
 
     const customerId = String(payload.customerId ?? '').trim();
     if (customerId) {

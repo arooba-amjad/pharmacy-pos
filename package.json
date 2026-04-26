@@ -1,7 +1,7 @@
 {
   "name": "pharmacy",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Pharmacy POS — desktop demo (inventory, sales, purchases, suppliers, settings).",
   "author": "Pharmacy",
   "main": "dist-electron/main.js",
@@ -63,6 +63,7 @@
     }
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.104.1",
     "adm-zip": "^0.5.17",
     "better-sqlite3": "^12.9.0",
     "clsx": "^2.1.1",

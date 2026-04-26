@@ -150,7 +150,7 @@ export const Settings: React.FC = () => {
 
     setChangingPassword(true);
     try {
-      const res = changePassword(currentPassword, newPassword);
+      const res = await changePassword(currentPassword, newPassword);
       if (!res.ok) {
         showToast(res.message, 'error');
         return;

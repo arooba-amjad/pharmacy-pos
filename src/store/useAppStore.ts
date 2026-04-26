@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { AppScreen } from '../types';
-import { readStoredThemeIsDark, writeStoredTheme } from '@/lib/themeStorage';
+import { writeStoredTheme } from '@/lib/themeStorage';
 
 interface AppState {
   currentScreen: AppScreen;
@@ -14,13 +14,12 @@ interface AppState {
 export const useAppStore = create<AppState>((set) => ({
   currentScreen: 'POS',
   isSidebarCollapsed: false,
-  isDarkMode: readStoredThemeIsDark(),
+  isDarkMode: false,
   setCurrentScreen: (screen) => set({ currentScreen: screen }),
   toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
   toggleDarkMode: () =>
-    set((state) => {
-      const next = !state.isDarkMode;
-      writeStoredTheme(next);
-      return { isDarkMode: next };
+    set(() => {
+      writeStoredTheme(false);
+      return { isDarkMode: false };
     }),
 }));

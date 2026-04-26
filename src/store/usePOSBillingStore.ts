@@ -1440,6 +1440,7 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
         ...(creditAmountPosted != null ? { creditAmount: creditAmountPosted } : {}),
         ...(counterPaid != null ? { counterPayment: counterPaid } : {}),
         discount: discountAmt,
+        tax,
         items: cart.map((line) => ({
           medicineId: line.medicineId,
           quantityMode: line.quantityMode,

@@ -8,16 +8,10 @@
     <script>
       (function () {
         try {
-          var k = 'pharmaos-theme';
-          var t = localStorage.getItem(k);
-          var dark = t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (dark) {
-            document.documentElement.classList.add('dark');
-            document.documentElement.style.colorScheme = 'dark';
-          } else {
-            document.documentElement.classList.remove('dark');
-            document.documentElement.style.colorScheme = 'light';
-          }
+          // Dark mode is intentionally disabled for this app build.
+          localStorage.setItem('pharmaos-theme', 'light');
+          document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = 'light';
         } catch (e) {}
       })();
     </script>

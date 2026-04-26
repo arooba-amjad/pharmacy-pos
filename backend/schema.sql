@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS sales (
   payment_method TEXT NOT NULL DEFAULT 'cash',
   subtotal REAL NOT NULL DEFAULT 0,
   discount REAL NOT NULL DEFAULT 0,
+  tax REAL NOT NULL DEFAULT 0,
   total REAL NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -179,3 +180,13 @@ CREATE TABLE IF NOT EXISTS return_items (
 
 CREATE INDEX IF NOT EXISTS idx_returns_type ON returns(return_type);
 CREATE INDEX IF NOT EXISTS idx_return_items_return ON return_items(return_id);
+
+CREATE TABLE IF NOT EXISTS app_users (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  password_salt TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

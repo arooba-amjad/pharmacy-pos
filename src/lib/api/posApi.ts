@@ -83,6 +83,7 @@ type SaleApiRow = {
   payment_method: 'cash' | 'card' | 'credit';
   subtotal: number;
   discount: number;
+  tax?: number;
   total: number;
   created_at: string;
   items?: SaleItemApiRow[];
@@ -207,7 +208,7 @@ function mapSaleRow(row: SaleApiRow, medicines: Medicine[]): Sale {
     discountApplied: Number(row.discount) || 0,
     serviceCharges: { deliveryFee: 0, serviceFee: 0, customLabel: 'Service charge', customAmount: 0 },
     serviceChargeTotal: 0,
-    tax: 0,
+    tax: Number(row.tax) || 0,
     total: Number(row.total) || 0,
     paymentMethod: row.payment_method,
     timestamp: row.created_at,

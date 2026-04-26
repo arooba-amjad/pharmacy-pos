@@ -7,6 +7,8 @@ import { backupOnStartup, createBackup, getLatestBackupFileName, listBackups, re
 import { checkDatabaseIntegrity, closeDatabase, getDatabase, getDatabaseVersion, getDbPath } from './db';
 import { exportDiagnosticsZip } from './diagnostics';
 import { createObservedDb } from './ipc/queryMonitor';
+import { registerLicenseHandlers } from './ipc/licenseHandlers';
+import { registerAuthHandlers } from './ipc/authHandlers';
 import { exportLogs, logger } from './logger';
 import { registerDomainHandlers } from './ipc/handlers';
 const require = createRequire(import.meta.url);
@@ -46,8 +48,12 @@ process.env.PHARMACY_USER_DATA_DIR = app.getPath('userData');
 let win: BrowserWindow | null = null;
 
 function isInsideRoot(targetPath: string, rootPath: string): boolean {
-  const resolvedTarget = path.resolve(targetPath);
-  const resolvedRoot = path.resolve(rootPath);
+  let resolvedTarget = path.resolve(targetPath);
+  let resolvedRoot = path.resolve(rootPath);
+  if (process.platform === 'win32') {
+    resolvedTarget = resolvedTarget.toLowerCase();
+    resolvedRoot = resolvedRoot.toLowerCase();
+  }
   if (resolvedTarget === resolvedRoot) return true;
   return resolvedTarget.startsWith(`${resolvedRoot}${path.sep}`);
 }
@@ -135,6 +141,8 @@ function setupAutoUpdater() {
 }
 
 function registerIpcHandlers() {
+  registerLicenseHandlers();
+  registerAuthHandlers(db);
   ipcMain.handle('window:minimize', () => win?.minimize());
   ipcMain.handle('window:maximize', () => (win?.isMaximized() ? win.unmaximize() : win?.maximize()));
   ipcMain.handle('window:close', () => win?.close());

@@ -8,6 +8,20 @@ type PosRequest = {
 
 contextBridge.exposeInMainWorld('api', {
   request: (payload: PosRequest) => ipcRenderer.invoke('pos:request', payload),
+  license: {
+    isActivated: () => ipcRenderer.invoke('license:isActivated'),
+    activate: (shopId: string, key: string) => ipcRenderer.invoke('license:activate', { shopId, key }),
+    check: () => ipcRenderer.invoke('license:check'),
+    clear: () => ipcRenderer.invoke('license:clear'),
+  },
+  auth: {
+    status: () => ipcRenderer.invoke('auth:status'),
+    createFirstUser: (payload: { username: string; email: string; password: string }) =>
+      ipcRenderer.invoke('auth:createFirstUser', payload),
+    login: (payload: { identity: string; password: string }) => ipcRenderer.invoke('auth:login', payload),
+    changePassword: (payload: { userId: string; currentPassword: string; nextPassword: string }) =>
+      ipcRenderer.invoke('auth:changePassword', payload),
+  },
   createBackup: () => ipcRenderer.invoke('backup:create'),
   listBackups: () => ipcRenderer.invoke('backup:list'),
   restoreBackup: (fileName: string) => ipcRenderer.invoke('backup:restore', fileName),
