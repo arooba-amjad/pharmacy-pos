@@ -18,13 +18,19 @@ function backupName(prefix = ''): string {
   return `${prefix}pharmacy-backup-${stamp}.db`;
 }
 
+function listBackupFilesByNewest(): string[] {
+  const dir = getBackupDir();
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith('.db') && f.includes('pharmacy-backup-'));
+  return files.sort((a, b) => {
+    const aTime = fs.statSync(path.join(dir, a)).mtimeMs;
+    const bTime = fs.statSync(path.join(dir, b)).mtimeMs;
+    return bTime - aTime;
+  });
+}
+
 function listAbsoluteBackups(): string[] {
-  return fs
-    .readdirSync(getBackupDir())
-    .filter((f) => f.endsWith('.db') && f.includes('pharmacy-backup-'))
-    .sort()
-    .reverse()
-    .map((f) => path.join(getBackupDir(), f));
+  const dir = getBackupDir();
+  return listBackupFilesByNewest().map((f) => path.join(dir, f));
 }
 
 function trimBackups(): void {
@@ -112,11 +118,7 @@ export function restoreBackup(fileName: string): void {
 }
 
 export function listBackups(): string[] {
-  return fs
-    .readdirSync(getBackupDir())
-    .filter((f) => f.endsWith('.db') && f.includes('pharmacy-backup-'))
-    .sort()
-    .reverse();
+  return listBackupFilesByNewest();
 }
 
 export function getLatestBackupFileName(): string | null {

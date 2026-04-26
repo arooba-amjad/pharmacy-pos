@@ -1,5 +1,5 @@
-import { endOfDay, parseISO, startOfDay, subDays } from 'date-fns';
-import { inRange, sliceRevenueAndCogs } from '@/lib/reportsAnalytics';
+import { endOfDay, parse, parseISO, startOfDay, subDays } from 'date-fns';
+import { sliceRevenueAndCogs } from '@/lib/reportsAnalytics';
 import type { Medicine, Purchase, Sale } from '@/types';
 import { isExpired, isExpiringSoon } from '@/lib/posDates';
 import { formatCurrency } from '@/lib/utils';
@@ -30,10 +30,13 @@ function sumPurchasesForBatch(
   end: Date
 ): number {
   const bn = batchNo.trim().toLowerCase();
+  const startDay = startOfDay(start);
+  const endDay = endOfDay(end);
   let qty = 0;
   for (const p of purchases) {
     if (p.status !== 'completed') continue;
-    if (!inRange(p.timestamp, start, end)) continue;
+    const purchaseDay = startOfDay(parse(p.purchaseDate, 'yyyy-MM-dd', new Date()));
+    if (purchaseDay < startDay || purchaseDay > endDay) continue;
     for (const ln of p.lines) {
       if (ln.medicineId !== medicineId) continue;
       if (ln.batchNo.trim().toLowerCase() !== bn) continue;

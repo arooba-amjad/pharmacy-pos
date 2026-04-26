@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Minus, Square, X, Pill, Sun, Moon, LogOut } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { Minus, Square, X, Pill, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
-import { cn } from '@/lib/utils';
 
 export const TitleBar: React.FC = () => {
-  const { isDarkMode, toggleDarkMode } = useAppStore();
   const logout = useAuthStore((s) => s.logout);
   const [now, setNow] = useState(() => new Date());
   const handleMinimize = () => (window as any).electronAPI?.minimize();
@@ -43,21 +40,6 @@ export const TitleBar: React.FC = () => {
         >
           <LogOut className="h-3.5 w-3.5" strokeWidth={2} />
           <span className="hidden sm:inline">Logout</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => toggleDarkMode()}
-          aria-pressed={isDarkMode}
-          className={cn(
-            'flex h-9 w-9 items-center justify-center rounded-lg transition-colors duration-150',
-            'text-muted-foreground hover:bg-muted/90 hover:text-foreground',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[color-mix(in_srgb,var(--card)_88%,transparent)]',
-            isDarkMode && 'text-amber-200/90 hover:text-amber-50'
-          )}
-          title={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
-          aria-label={isDarkMode ? 'Switch to light theme' : 'Switch to dark theme'}
-        >
-          {isDarkMode ? <Sun className="h-4 w-4" strokeWidth={2} aria-hidden /> : <Moon className="h-4 w-4" strokeWidth={2} aria-hidden />}
         </button>
         <button
           type="button"

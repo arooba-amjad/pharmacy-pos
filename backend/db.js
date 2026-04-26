@@ -93,23 +93,162 @@ let _activeDbPath = '';
 
 /**
  * If the target DB file does not exist yet but the legacy dev DB does, copy it once (including WAL sidecars if present).
+ * If the target file exists but purchase history is missing there while legacy has it, merge purchase data once.
  * @param {string} targetPath
  */
 function maybeMigrateFromLegacyDevDb(targetPath) {
-  if (fs.existsSync(targetPath)) return;
   const legacy = path.resolve(process.cwd(), 'backend', 'data', 'pharmacy.sqlite');
   if (!fs.existsSync(legacy)) return;
+  const targetExists = fs.existsSync(targetPath);
+  if (targetExists) {
+    try {
+      const targetPurchases = readTableCount(targetPath, 'purchases');
+      const legacyPurchases = readTableCount(legacy, 'purchases');
+      if (targetPurchases === 0 && legacyPurchases > 0) {
+        backupDbFile(targetPath, '.pre-legacy-merge-');
+        mergeLegacyPurchases(targetPath, legacy);
+      }
+    } catch {
+      // if scan/merge fails, preserve existing target DB
+    }
+    return;
+  }
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.copyFileSync(legacy, targetPath);
+  copyDbWithSidecars(legacy, targetPath);
+}
+
+/**
+ * @param {string} source
+ * @param {string} destination
+ */
+function copyDbWithSidecars(source, destination) {
+  fs.copyFileSync(source, destination);
   for (const ext of ['-wal', '-shm']) {
-    const side = legacy + ext;
+    const side = source + ext;
     if (fs.existsSync(side)) {
       try {
-        fs.copyFileSync(side, targetPath + ext);
+        fs.copyFileSync(side, destination + ext);
       } catch {
         // ignore optional sidecar copy failures
       }
     }
+  }
+}
+
+function backupDbFile(dbPath, infix) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = `${dbPath}${infix}${stamp}.bak`;
+  try {
+    fs.copyFileSync(dbPath, backupPath);
+  } catch {
+    // best effort backup
+  }
+}
+
+/**
+ * @param {string} dbPath
+ * @param {string} table
+ * @returns {number}
+ */
+function readTableCount(dbPath, table) {
+  const scan = new Database(dbPath, { readonly: true, fileMustExist: true });
+  try {
+    return Number(scan.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get()?.c ?? 0);
+  } finally {
+    scan.close();
+  }
+}
+
+/**
+ * Backfill missing purchase history from legacy DB into target DB.
+ * Keeps target's existing rows and inserts only missing purchase/purchase_item IDs.
+ * @param {string} targetPath
+ * @param {string} legacyPath
+ */
+function mergeLegacyPurchases(targetPath, legacyPath) {
+  const targetDb = new Database(targetPath);
+  const legacyDb = new Database(legacyPath, { readonly: true, fileMustExist: true });
+  try {
+    targetDb.pragma('foreign_keys = ON');
+    const tx = targetDb.transaction(() => {
+      const legacyPurchases = legacyDb
+        .prepare('SELECT * FROM purchases ORDER BY created_at ASC')
+        .all();
+      const insertSupplier = targetDb.prepare(
+        `INSERT OR IGNORE INTO suppliers
+        (id, name, phone, company, address, balance_payable, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      );
+      const insertPurchase = targetDb.prepare(
+        `INSERT OR IGNORE INTO purchases
+        (id, supplier_id, supplier_name, status, subtotal, tax, discount, total, purchase_date, grn_no, notes, created_at, received_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      );
+      const hasSupplier = targetDb.prepare('SELECT 1 FROM suppliers WHERE id = ? LIMIT 1');
+      const hasMedicine = targetDb.prepare('SELECT 1 FROM medicines WHERE id = ? LIMIT 1');
+      const hasPurchase = targetDb.prepare('SELECT 1 FROM purchases WHERE id = ? LIMIT 1');
+      const insertPurchaseItem = targetDb.prepare(
+        `INSERT OR IGNORE INTO purchase_items
+        (id, purchase_id, medicine_id, batch_no, expiry_date, quantity_packs, tablets_per_pack, quantity_tablets, unit_cost_per_tablet, line_total, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      );
+      const legacySupplierById = legacyDb.prepare('SELECT * FROM suppliers WHERE id = ?');
+      const legacyItemsByPurchase = legacyDb.prepare('SELECT * FROM purchase_items WHERE purchase_id = ? ORDER BY created_at ASC');
+
+      for (const p of legacyPurchases) {
+        if (!hasSupplier.get(p.supplier_id)) {
+          const s = legacySupplierById.get(p.supplier_id);
+          const now = new Date().toISOString();
+          insertSupplier.run(
+            p.supplier_id,
+            s?.name ?? p.supplier_name ?? 'Supplier',
+            s?.phone ?? '',
+            s?.company ?? '',
+            s?.address ?? '',
+            Number(s?.balance_payable) || 0,
+            s?.created_at ?? now,
+            s?.updated_at ?? now
+          );
+        }
+        insertPurchase.run(
+          p.id,
+          p.supplier_id,
+          p.supplier_name ?? '',
+          p.status ?? 'pending',
+          Number(p.subtotal) || 0,
+          Number(p.tax) || 0,
+          Number(p.discount) || 0,
+          Number(p.total) || 0,
+          p.purchase_date ?? new Date().toISOString().slice(0, 10),
+          p.grn_no ?? '',
+          p.notes ?? '',
+          p.created_at ?? new Date().toISOString(),
+          p.received_at ?? null
+        );
+        if (!hasPurchase.get(p.id)) continue;
+        const legacyItems = legacyItemsByPurchase.all(p.id);
+        for (const it of legacyItems) {
+          if (!hasMedicine.get(it.medicine_id)) continue;
+          insertPurchaseItem.run(
+            it.id,
+            it.purchase_id,
+            it.medicine_id,
+            it.batch_no ?? '',
+            it.expiry_date ?? '',
+            Number(it.quantity_packs) || 0,
+            Number(it.tablets_per_pack) || 1,
+            Number(it.quantity_tablets) || 0,
+            Number(it.unit_cost_per_tablet) || 0,
+            Number(it.line_total) || 0,
+            it.created_at ?? new Date().toISOString()
+          );
+        }
+      }
+    });
+    tx();
+  } finally {
+    legacyDb.close();
+    targetDb.close();
   }
 }
 

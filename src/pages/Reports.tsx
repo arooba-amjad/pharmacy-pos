@@ -238,6 +238,15 @@ export const Reports: React.FC = () => {
     () => Math.round(returnsInRange.reduce((a, r) => a + r.total, 0) * 100) / 100,
     [returnsInRange]
   );
+  const completedPurchasesInRange = useMemo(
+    () =>
+      purchases.filter((p) => {
+        if (p.status !== 'completed') return false;
+        const purchaseDay = startOfDay(parse(p.purchaseDate, 'yyyy-MM-dd', new Date()));
+        return purchaseDay >= range.start && purchaseDay <= range.end;
+      }).length,
+    [purchases, range.end, range.start]
+  );
 
   const inventoryRows = useMemo(() => {
     const low: { medicine: (typeof medicines)[number]; qty: string }[] = [];
@@ -932,7 +941,7 @@ export const Reports: React.FC = () => {
       <p className="text-center text-[11px] text-muted-foreground">
         Purchase GRNs in range:{' '}
         <span className="font-semibold text-foreground">
-          {purchases.filter((p) => p.status === 'completed' && inRange(p.timestamp, range.start, range.end)).length}
+          {completedPurchasesInRange}
         </span>{' '}
         completed · Returns in range: <span className="font-semibold text-foreground">{returnsInRange.length}</span> (
         <span className="font-semibold text-foreground">{formatCurrency(returnsValueInRange)}</span>) · Gross profit uses

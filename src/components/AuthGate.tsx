@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, Eye, EyeOff, Loader2, Lock, ShieldCheck, UserCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, Eye, EyeOff, Loader2, Lock, Maximize2, Minus, ShieldCheck, UserCircle2, X, XCircle } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { cn } from '@/lib/utils';
 
@@ -43,6 +43,17 @@ export const AuthGate: React.FC = () => {
   }, [licenseActivated, user]);
 
   const keyLooksValid = useMemo(() => LICENSE_PATTERN.test(licenseKey.trim()), [licenseKey]);
+  const hasWindowControls = Boolean(window.api?.minimize || window.electronAPI?.minimize);
+
+  const handleWindowAction = async (action: 'minimize' | 'maximize' | 'close') => {
+    const desktopApi = window.api ?? window.electronAPI;
+    if (!desktopApi) return;
+    try {
+      await desktopApi[action]();
+    } catch {
+      // Ignore renderer-side action errors on unsupported environments.
+    }
+  };
 
   const withLoader = async (fn: () => void) => {
     setIsLoading(true);
@@ -139,7 +150,44 @@ export const AuthGate: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen items-center justify-center overflow-auto bg-[radial-gradient(120%_80%_at_0%_0%,rgba(14,116,144,0.09),transparent_56%),radial-gradient(90%_60%_at_100%_100%,rgba(16,185,129,0.08),transparent_63%),linear-gradient(180deg,#f8fbff_0%,#f1f6ff_46%,#eef4ff_100%)] p-4 sm:p-6">
-      <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_24px_68px_-30px_rgba(15,23,42,0.3)] md:grid-cols-[1fr_1.05fr]">
+      {hasWindowControls ? (
+        <div className="fixed right-0 top-0 z-50 flex items-center gap-0.5 rounded-bl-lg border border-r-0 border-t-0 border-slate-200/80 bg-white/95 px-1 py-1 shadow-sm">
+          <button
+            type="button"
+            onClick={() => {
+              void handleWindowAction('minimize');
+            }}
+            className="rounded-md p-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-800"
+            aria-label="Minimize window"
+            title="Minimize"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void handleWindowAction('maximize');
+            }}
+            className="rounded-md p-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-800"
+            aria-label="Maximize window"
+            title="Maximize"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void handleWindowAction('close');
+            }}
+            className="rounded-md p-1.5 text-slate-600 transition hover:bg-red-100 hover:text-red-700"
+            aria-label="Close window"
+            title="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
+      <div className="relative grid w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_24px_68px_-30px_rgba(15,23,42,0.3)] md:grid-cols-[1fr_1.05fr]">
         <section className="relative hidden overflow-hidden bg-gradient-to-br from-sky-50 via-white to-emerald-50/60 p-9 md:flex md:flex-col md:justify-between">
           <div className="pointer-events-none absolute -left-16 -top-16 h-52 w-52 rounded-full bg-sky-200/30 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-14 -right-16 h-56 w-56 rounded-full bg-emerald-200/35 blur-3xl" />

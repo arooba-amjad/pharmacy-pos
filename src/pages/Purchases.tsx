@@ -307,7 +307,10 @@ export const Purchases: React.FC = () => {
       return;
     }
     const payload = buildPayload();
-    if (!payload) return;
+    if (!payload) {
+      setActionError('Select a supplier and add at least one valid medicine line before saving.');
+      return;
+    }
     try {
       setActionError(null);
       setIsSaving(true);
@@ -329,7 +332,10 @@ export const Purchases: React.FC = () => {
       return;
     }
     const payload = buildPayload();
-    if (!payload) return;
+    if (!payload) {
+      setActionError('Select a supplier and add at least one valid medicine line before receiving stock.');
+      return;
+    }
     try {
       setActionError(null);
       setIsReceiving(true);
@@ -1000,14 +1006,14 @@ export const Purchases: React.FC = () => {
         <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
           <button
             type="button"
-            className="absolute inset-0"
+            className="absolute inset-0 z-0"
             aria-label="Close"
             onClick={() => {
               setDrawerOpen(false);
               resetForm();
             }}
           />
-          <div className="relative z-10 flex h-full w-full max-w-lg flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="no-drag relative z-10 flex h-full w-full max-w-lg flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-zinc-800">
               <h2 className="font-semibold text-slate-900 dark:text-white">
                 {editingId ? 'Edit purchase' : reorderContext ? 'Purchase order (from reorder)' : 'New purchase'}
@@ -1141,7 +1147,7 @@ export const Purchases: React.FC = () => {
                   setDrawerOpen(false);
                   resetForm();
                 }}
-                className="flex-1 rounded-xl border py-2.5 text-sm font-medium dark:border-zinc-700"
+                className="no-drag flex-1 rounded-xl border py-2.5 text-sm font-medium dark:border-zinc-700"
               >
                 Cancel
               </button>
@@ -1149,7 +1155,7 @@ export const Purchases: React.FC = () => {
                 type="button"
                 onClick={() => void savePending()}
                 disabled={isSaving || isReceiving}
-                className="flex-1 rounded-xl border border-slate-900 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 dark:border-white dark:text-white"
+                className="no-drag flex-1 rounded-xl border border-slate-900 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 dark:border-white dark:text-white"
               >
                 {isSaving ? 'Saving...' : 'Save as pending'}
               </button>
@@ -1157,7 +1163,7 @@ export const Purchases: React.FC = () => {
                 type="button"
                 onClick={() => void receiveStock()}
                 disabled={isSaving || isReceiving}
-                className="flex-1 rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900"
+                className="no-drag flex-1 rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900"
               >
                 {isReceiving ? 'Receiving...' : 'Receive stock'}
               </button>

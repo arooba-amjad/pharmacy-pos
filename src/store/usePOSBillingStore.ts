@@ -1432,12 +1432,13 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
 
     // Persist sale/stock mutation in backend transaction first.
     try {
+      const normalizedCustomerId = customer?.id?.trim();
       await posApi.sales.create({
-        customerId: customer?.id ?? null,
+        ...(normalizedCustomerId ? { customerId: normalizedCustomerId } : {}),
         customerName: customer?.name ?? '',
         paymentMethod: finalPaymentMethod,
-        creditAmount: creditAmountPosted ?? null,
-        counterPayment: counterPaid ?? null,
+        ...(creditAmountPosted != null ? { creditAmount: creditAmountPosted } : {}),
+        ...(counterPaid != null ? { counterPayment: counterPaid } : {}),
         discount: discountAmt,
         items: cart.map((line) => ({
           medicineId: line.medicineId,
