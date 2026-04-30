@@ -23,7 +23,14 @@ export function getMedicineAvailability(m: Medicine): {
   expiringSoon: boolean;
 } {
   let sellableQty = 0;
-  let displayPrice: number | null = null;
+  const masterSale =
+    m.salePricePerTablet != null
+      ? Math.max(0.01, Number(m.salePricePerTablet))
+      : m.defaultSalePrice != null
+        ? Math.max(0.01, Number(m.defaultSalePrice))
+        : null;
+  let displayPrice: number | null =
+    masterSale != null && Number.isFinite(masterSale) ? masterSale : null;
   let expiringSoon = false;
   const lowThresh = getMedicineLowStockThresholdTablets(m);
   const expDays = Math.max(1, useSettingsStore.getState().expiryAlertDays ?? 75);

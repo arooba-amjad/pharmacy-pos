@@ -55,6 +55,8 @@ export const saleCreateSchema = z.object({
   customerId: z.string().trim().optional(),
   customerName: z.string().optional(),
   paymentMethod: z.enum(['cash', 'card', 'credit']).default('cash'),
+  creditAmount: z.coerce.number().min(0).optional(),
+  counterPayment: z.coerce.number().min(0).optional(),
   discount: z.coerce.number().min(0).optional().default(0),
   tax: z.coerce.number().min(0).optional().default(0),
   items: z

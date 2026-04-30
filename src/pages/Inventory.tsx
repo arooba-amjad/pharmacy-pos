@@ -103,6 +103,7 @@ export const Inventory: React.FC = () => {
   const adjustBatchStock = usePOSBillingStore((s) => s.adjustBatchStock);
   const updateBatchFields = usePOSBillingStore((s) => s.updateBatchFields);
   const updateMedicineMeta = usePOSBillingStore((s) => s.updateMedicineMeta);
+  const applyMedicineMasterPatch = usePOSBillingStore((s) => s.applyMedicineMasterPatch);
   const showToast = useToastStore((s) => s.show);
 
   const [query, setQuery] = useState('');
@@ -255,24 +256,26 @@ export const Inventory: React.FC = () => {
     const purchasePp = Math.max(0, Math.round(newBatch.purchasePricePerPack * 100) / 100);
     const salePt = tabletSaleFromPack(salePp, tpp);
     const costPt = purchasePp <= 0 ? 0 : tabletPurchaseFromPack(purchasePp, tpp);
+    applyMedicineMasterPatch(med.id, {
+      salePricePerPack: salePp,
+      purchasePricePerPack: purchasePp,
+    });
 
     const existing = findBatchByBatchNoNormalized(med, bn);
     if (existing) {
       updateBatchFields(med.id, existing.id, {
+        batchNo: bn,
         expiryDate: newBatch.expiryDate,
-        costPricePerTablet: costPt,
-        salePricePerTablet: salePt,
-        salePricePerPack: tpp >= 2 ? salePp : salePt,
       });
       if (packs > 0) {
         adjustBatchStock(med.id, existing.id, tablets);
         showToast(
-          `Batch “${existing.batchNo}” updated (expiry & prices for the whole lot) and ${packs} pack${packs === 1 ? '' : 's'} (${tablets} tablets) added.`,
+          `Batch “${existing.batchNo}” updated and ${packs} pack${packs === 1 ? '' : 's'} (${tablets} tablets) added. Sale/purchase prices were applied to all batches and POS.`,
           'success'
         );
       } else {
         showToast(
-          `Batch “${existing.batchNo}” updated — expiry and prices apply to the whole lot. Enter packs above if you also need to add stock.`,
+          `Batch “${existing.batchNo}” updated. Sale/purchase prices were applied to all batches and POS.`,
           'success'
         );
       }

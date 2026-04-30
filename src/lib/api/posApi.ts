@@ -80,6 +80,9 @@ type SaleItemApiRow = {
 type SaleApiRow = {
   id: string;
   customer_name?: string;
+  customerName?: string;
+  customer_phone?: string;
+  customerPhone?: string;
   payment_method: 'cash' | 'card' | 'credit';
   subtotal: number;
   discount: number;
@@ -172,6 +175,16 @@ function toMedicine(row: MedicineApiRow): Medicine {
 }
 
 function mapSaleRow(row: SaleApiRow, medicines: Medicine[]): Sale {
+  const customerName = (row.customer_name ?? row.customerName ?? '').trim();
+  const customer =
+    customerName.length > 0
+      ? {
+          id: `sale-customer-${row.id}`,
+          name: customerName,
+          phone: row.customer_phone ?? row.customerPhone ?? '',
+          balance: 0,
+        }
+      : null;
   const items = (row.items ?? []).map((it) => {
     const med = medicines.find((m) => m.id === it.medicine_id);
     const tpp = Math.max(1, med?.tabletsPerPack || 1);
@@ -200,7 +213,7 @@ function mapSaleRow(row: SaleApiRow, medicines: Medicine[]): Sale {
   return {
     id: row.id,
     invoiceNo: `INV-${row.id.slice(-8).toUpperCase()}`,
-    customer: null,
+    customer,
     items,
     subtotal: Number(row.subtotal) || 0,
     discountInput: Number(row.discount) || 0,

@@ -381,7 +381,14 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
         posApi.purchases.listDetailed(medicines),
         posApi.returns.listDetailed(),
       ]);
-      set({ sales, purchases, returns });
+      set((s) => {
+        const salesWithCustomerFallback = sales.map((sale) => {
+          if (sale.customer) return sale;
+          const prev = s.sales.find((x) => x.id === sale.id);
+          return prev?.customer ? { ...sale, customer: prev.customer } : sale;
+        });
+        return { sales: salesWithCustomerFallback, purchases, returns };
+      });
     } catch (error) {
       toastMutationInfo(
         `Could not refresh sales and purchases (${apiErrMessage(error)}). Showing cached business data.`
@@ -950,16 +957,12 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
             salePricePerTablet: catNorm.salePricePerTablet,
             salePricePerPack: catNorm.salePricePerPack,
             defaultSalePrice: catNorm.salePricePerTablet,
-            batches: next.batches.map((b) =>
-              b.totalTablets <= 0
-                ? {
-                    ...b,
-                    salePricePerTablet: catNorm.salePricePerTablet,
-                    salePricePerPack: catNorm.salePricePerPack,
-                    costPricePerTablet: Math.max(0, Math.round(purchaseTablet * 10000) / 10000),
-                  }
-                : b
-            ),
+            batches: next.batches.map((b) => ({
+              ...b,
+              salePricePerTablet: catNorm.salePricePerTablet,
+              salePricePerPack: catNorm.salePricePerPack,
+              costPricePerTablet: Math.max(0, Math.round(purchaseTablet * 10000) / 10000),
+            })),
           };
         }
         return next;
@@ -996,6 +999,48 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
           purchasePerPack: patch.purchasePricePerPack,
           salePerPack: patch.salePricePerPack,
         });
+        if (
+          patch.salePricePerPack != null ||
+          patch.purchasePricePerPack != null ||
+          patch.tabletsPerPack != null
+        ) {
+          const medAfterPatch = get().medicines.find((m) => m.id === medicineId);
+          if (medAfterPatch) {
+            const tpp = getMedicineTabletsPerPack(medAfterPatch);
+            const salePt = Math.max(
+              0.01,
+              Math.round(
+                Number(
+                  medAfterPatch.salePricePerTablet ??
+                    medAfterPatch.defaultSalePrice ??
+                    (medAfterPatch.salePricePerPack ?? 0)
+                ) * 10000
+              ) / 10000
+            );
+            const salePp = Math.max(
+              0.01,
+              Math.round(
+                Number(
+                  medAfterPatch.salePricePerPack ??
+                    (tpp >= 2 ? salePt * tpp : salePt)
+                ) * 100
+              ) / 100
+            );
+            const costPt = Math.max(
+              0,
+              Math.round(Number(medAfterPatch.defaultPurchasePrice ?? 0) * 10000) / 10000
+            );
+            await Promise.all(
+              medAfterPatch.batches.map((b) =>
+                posApi.batches.update(b.id, {
+                  salePricePerTablet: salePt,
+                  salePricePerPack: salePp,
+                  costPricePerTablet: costPt,
+                })
+              )
+            );
+          }
+        }
         await get().hydratePOSData();
         toastMutationSuccess('Medicine updated');
       } catch (error) {

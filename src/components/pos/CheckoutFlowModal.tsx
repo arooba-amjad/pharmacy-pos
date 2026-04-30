@@ -158,6 +158,14 @@ export const CheckoutFlowModal: React.FC = () => {
 
   const [serviceChargeInput, setServiceChargeInput] = useState('');
   const serviceChargeFieldRef = useRef<HTMLInputElement>(null);
+  const modalPanelRef = useRef<HTMLDivElement>(null);
+  const focusServiceChargeInput = useCallback(() => {
+    const field = serviceChargeFieldRef.current;
+    if (!field) return false;
+    field.focus();
+    field.select();
+    return document.activeElement === field;
+  }, []);
 
   const checkoutCustomerMatches = useMemo(() => {
     const n = checkoutName.trim().toLowerCase();
@@ -260,8 +268,44 @@ export const CheckoutFlowModal: React.FC = () => {
   useEffect(() => {
     if (step !== 'charges') return;
     setServiceChargeInput('');
-    const t = window.requestAnimationFrame(() => serviceChargeFieldRef.current?.focus());
-    return () => window.cancelAnimationFrame(t);
+    let cancelled = false;
+    let timeoutId = 0;
+    const deadline = Date.now() + 1200;
+
+    const attemptFocus = () => {
+      if (cancelled) return;
+      const focused = focusServiceChargeInput();
+      if (focused || Date.now() >= deadline) return;
+      timeoutId = window.setTimeout(attemptFocus, 40);
+    };
+
+    const raf1 = window.requestAnimationFrame(attemptFocus);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(raf1);
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [step, focusServiceChargeInput]);
+
+  useEffect(() => {
+    if (step === null) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const panel = modalPanelRef.current;
+      if (!panel) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (active && !panel.contains(active)) {
+        const firstFocusable = panel.querySelector<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (firstFocusable) {
+          e.preventDefault();
+          firstFocusable.focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
   }, [step]);
 
   useEffect(() => {
@@ -605,6 +649,36 @@ export const CheckoutFlowModal: React.FC = () => {
               'relative z-10 w-full overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-2xl dark:border-border/60 dark:bg-card',
               step === 'receipt' ? 'max-w-lg max-h-[92vh] flex flex-col' : 'max-w-md'
             )}
+            ref={modalPanelRef}
+            onKeyDown={(e) => {
+              if (e.key !== 'Tab') return;
+              const panel = modalPanelRef.current;
+              if (!panel) return;
+              const focusables = Array.from(
+                panel.querySelectorAll<HTMLElement>(
+                  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                )
+              ).filter((el) => !el.hasAttribute('disabled') && el.tabIndex >= 0);
+              if (focusables.length === 0) return;
+              const first = focusables[0];
+              const last = focusables[focusables.length - 1];
+              const active = document.activeElement as HTMLElement | null;
+
+              if (!active || !panel.contains(active)) {
+                e.preventDefault();
+                first?.focus();
+                return;
+              }
+              if (!e.shiftKey && active === last) {
+                e.preventDefault();
+                first?.focus();
+                return;
+              }
+              if (e.shiftKey && active === first) {
+                e.preventDefault();
+                last?.focus();
+              }
+            }}
             initial={{ opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -733,6 +807,11 @@ export const CheckoutFlowModal: React.FC = () => {
                 <motion.div
                   key="charges"
                   tabIndex={-1}
+                  onAnimationComplete={() => {
+                    void window.requestAnimationFrame(() => {
+                      focusServiceChargeInput();
+                    });
+                  }}
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 12 }}
@@ -761,6 +840,7 @@ export const CheckoutFlowModal: React.FC = () => {
                     <input
                       id="checkout-service-charge-input"
                       ref={serviceChargeFieldRef}
+                      autoFocus
                       type="number"
                       min={0}
                       step={0.01}

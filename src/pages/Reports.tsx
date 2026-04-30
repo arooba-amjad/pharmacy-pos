@@ -63,13 +63,24 @@ import { formatCurrency, formatCurrencyChartTick, cn } from '@/lib/utils';
 import { displayManufacturer } from '@/lib/medicineDisplay';
 import { SubstitutionIntelligenceSection } from '@/components/reports/SubstitutionIntelligenceSection';
 
-type TabId = 'sales' | 'profit' | 'products' | 'batches' | 'expiry' | 'dead' | 'inventory' | 'customers' | 'substitution';
+type TabId =
+  | 'sales'
+  | 'profit'
+  | 'products'
+  | 'batches'
+  | 'returns'
+  | 'expiry'
+  | 'dead'
+  | 'inventory'
+  | 'customers'
+  | 'substitution';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'sales', label: 'Sales' },
   { id: 'profit', label: 'Profit' },
   { id: 'products', label: 'Product P&L' },
   { id: 'batches', label: 'Batches' },
+  { id: 'returns', label: 'Returns' },
   { id: 'expiry', label: 'Expiry loss' },
   { id: 'dead', label: 'Dead stock' },
   { id: 'inventory', label: 'Inventory' },
@@ -237,6 +248,10 @@ export const Reports: React.FC = () => {
   const returnsValueInRange = useMemo(
     () => Math.round(returnsInRange.reduce((a, r) => a + r.total, 0) * 100) / 100,
     [returnsInRange]
+  );
+  const netRevenue = useMemo(
+    () => Math.round((totalRevenue - returnsValueInRange) * 100) / 100,
+    [totalRevenue, returnsValueInRange]
   );
   const completedPurchasesInRange = useMemo(
     () =>
@@ -420,8 +435,11 @@ export const Reports: React.FC = () => {
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Total revenue</p>
-              <p className="mt-2 text-3xl font-black tabular-nums">{formatCurrency(totalRevenue)}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Net revenue</p>
+              <p className="mt-2 text-3xl font-black tabular-nums">{formatCurrency(netRevenue)}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Sales {formatCurrency(totalRevenue)} − returns {formatCurrency(returnsValueInRange)}
+              </p>
             </div>
             <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
               <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Number of sales</p>
@@ -644,6 +662,64 @@ export const Reports: React.FC = () => {
             {batchRows.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">No batch activity in this filter.</p>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {tab === 'returns' && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Returns count</p>
+              <p className="mt-2 text-3xl font-black tabular-nums">{returnsInRange.length}</p>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Returns value</p>
+              <p className="mt-2 text-3xl font-black tabular-nums">{formatCurrency(returnsValueInRange)}</p>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Net revenue</p>
+              <p className="mt-2 text-3xl font-black tabular-nums">{formatCurrency(netRevenue)}</p>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
+            <h3 className="mb-3 text-base font-bold">Return records (filtered date range)</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead>
+                  <tr className="border-b text-[10px] font-bold uppercase text-muted-foreground">
+                    <th className="pb-2">Time</th>
+                    <th className="pb-2">Type</th>
+                    <th className="pb-2">Ref</th>
+                    <th className="pb-2 text-right">Lines</th>
+                    <th className="pb-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {returnsInRange
+                    .slice()
+                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                    .map((r) => (
+                      <tr key={r.id} className="border-b border-border/50 last:border-0">
+                        <td className="py-2 tabular-nums">{format(new Date(r.timestamp), 'MMM d, yyyy · h:mm a')}</td>
+                        <td className="py-2">
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold">
+                            {r.kind === 'customer' ? 'Customer' : 'Supplier'}
+                          </span>
+                        </td>
+                        <td className="py-2 text-muted-foreground">
+                          {r.customerName ?? r.supplierName ?? '—'}
+                        </td>
+                        <td className="py-2 text-right tabular-nums">{r.lines.length}</td>
+                        <td className="py-2 text-right tabular-nums font-bold">{formatCurrency(r.total)}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+              {returnsInRange.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">No returns in selected range.</p>
+              ) : null}
+            </div>
           </div>
         </div>
       )}

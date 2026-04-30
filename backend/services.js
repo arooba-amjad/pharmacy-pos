@@ -379,9 +379,29 @@ export function createReturn(payload) {
       }
 
       if (type === 'customer') {
+        // Customer returns always restock into the newest lot for this medicine
+        // so inventory stays consolidated in the latest batch.
+        targetBatch = db
+          .prepare(
+            `SELECT *
+             FROM batches
+             WHERE medicine_id = ? AND date(expiry_date) >= date('now')
+             ORDER BY
+               CASE WHEN received_at IS NULL OR trim(received_at) = '' THEN 1 ELSE 0 END ASC,
+               datetime(received_at) DESC,
+               CASE
+                 WHEN trim(batch_no) GLOB '[0-9]*' THEN CAST(trim(batch_no) AS INTEGER)
+                 ELSE -1
+               END DESC,
+               trim(batch_no) DESC,
+               rowid DESC
+             LIMIT 1`
+          )
+          .get(item.medicineId);
+
         if (!targetBatch) {
           const fallback = db
-            .prepare('SELECT * FROM batches WHERE medicine_id = ? ORDER BY date(expiry_date) ASC LIMIT 1')
+            .prepare('SELECT * FROM batches WHERE medicine_id = ? ORDER BY datetime(received_at) DESC, id DESC LIMIT 1')
             .get(item.medicineId);
           if (fallback) targetBatch = fallback;
         }
