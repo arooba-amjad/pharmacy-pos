@@ -111,6 +111,12 @@ export const SettingsDiagnosticsPanel: React.FC<{ appVersion?: string }> = ({ ap
     const dbFolder = parentFolder(diag.dbPath);
     return dbFolder ? `${dbFolder}\\backups` : null;
   }, [diag.dbPath]);
+  const medicinesDbPath = useMemo(() => {
+    if (!diag.dbPath) return null;
+    const dbFolder = parentFolder(diag.dbPath);
+    return dbFolder ? `${dbFolder}\\medicines.db` : null;
+  }, [diag.dbPath]);
+  const medicinesDbFolderPath = useMemo(() => parentFolder(medicinesDbPath ?? undefined), [medicinesDbPath]);
 
   useEffect(() => {
     const suggested = defaultDiagnosticsPath(diag.dbPath);
@@ -231,7 +237,10 @@ export const SettingsDiagnosticsPanel: React.FC<{ appVersion?: string }> = ({ ap
   };
 
   const handleOpenPath = async (targetPath: string | null, successLabel: string) => {
-    if (!targetPath) return;
+    if (!targetPath) {
+      showToast('Path is not available yet. Please click Refresh first.', 'error');
+      return;
+    }
     try {
       await window.api?.openPath?.(targetPath);
       showToast(successLabel, 'success');
@@ -241,7 +250,10 @@ export const SettingsDiagnosticsPanel: React.FC<{ appVersion?: string }> = ({ ap
   };
 
   const handleCopyPath = async (targetPath: string | null) => {
-    if (!targetPath) return;
+    if (!targetPath) {
+      showToast('Path is not available yet. Please click Refresh first.', 'error');
+      return;
+    }
     try {
       await navigator.clipboard.writeText(targetPath);
       showToast('Path copied to clipboard.', 'success');
@@ -252,7 +264,7 @@ export const SettingsDiagnosticsPanel: React.FC<{ appVersion?: string }> = ({ ap
 
   return (
     <div className="space-y-5">
-      <div className="rounded-[18px] border border-slate-200/80 bg-white/90 p-5 shadow-[0_8px_30px_-18px_rgba(15,23,42,0.18)] dark:border-zinc-800/90 dark:bg-zinc-900/70 dark:shadow-black/30">
+      <div className="no-drag rounded-[18px] border border-slate-200/80 bg-white/90 p-5 shadow-[0_8px_30px_-18px_rgba(15,23,42,0.18)] dark:border-zinc-800/90 dark:bg-zinc-900/70 dark:shadow-black/30">
         <h3 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">System Diagnostics &amp; Support</h3>
         <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
           Backup, restore, and support tools for non-technical staff.
@@ -365,7 +377,7 @@ export const SettingsDiagnosticsPanel: React.FC<{ appVersion?: string }> = ({ ap
         </div>
       </div>
 
-      <div className="rounded-[18px] border border-slate-200/80 bg-white/90 p-5 shadow-[0_8px_30px_-18px_rgba(15,23,42,0.18)] dark:border-zinc-800/90 dark:bg-zinc-900/70 dark:shadow-black/30">
+      <div className="no-drag rounded-[18px] border border-slate-200/80 bg-white/90 p-5 shadow-[0_8px_30px_-18px_rgba(15,23,42,0.18)] dark:border-zinc-800/90 dark:bg-zinc-900/70 dark:shadow-black/30">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h4 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">Backups</h4>
@@ -433,12 +445,11 @@ export const SettingsDiagnosticsPanel: React.FC<{ appVersion?: string }> = ({ ap
             </tbody>
           </table>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="no-drag mt-3 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => void handleOpenPath(backupFolderPath, 'Opened backup folder.')}
-            disabled={!backupFolderPath}
-            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+            className="no-drag inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
           >
             <FolderOpen className="h-3.5 w-3.5" />
             Open Backup Folder
@@ -446,11 +457,26 @@ export const SettingsDiagnosticsPanel: React.FC<{ appVersion?: string }> = ({ ap
           <button
             type="button"
             onClick={() => void handleCopyPath(backupFolderPath)}
-            disabled={!backupFolderPath}
-            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+            className="no-drag inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
           >
             <Copy className="h-3.5 w-3.5" />
             Copy Backup Folder Path
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleOpenPath(medicinesDbFolderPath, 'Opened medicines DB folder.')}
+            className="no-drag inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
+            Open Medicines DB Folder
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCopyPath(medicinesDbPath)}
+            className="no-drag inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
+          >
+            <Copy className="h-3.5 w-3.5" />
+            Copy Medicines DB Path
           </button>
         </div>
       </div>
@@ -459,6 +485,7 @@ export const SettingsDiagnosticsPanel: React.FC<{ appVersion?: string }> = ({ ap
         <h4 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">System health details</h4>
         <div className="mt-3 space-y-2 text-xs text-slate-600 dark:text-zinc-400">
           <p><span className="font-semibold text-slate-800 dark:text-zinc-200">DB Path:</span> {diag.dbPath ?? 'Unavailable'}</p>
+          <p><span className="font-semibold text-slate-800 dark:text-zinc-200">Medicines DB Path:</span> {medicinesDbPath ?? 'Unavailable'}</p>
           <p><span className="font-semibold text-slate-800 dark:text-zinc-200">DB Version:</span> {diag.dbVersion ?? 'Unavailable'}</p>
           <p><span className="font-semibold text-slate-800 dark:text-zinc-200">Backup count:</span> {backupCount}</p>
           <div>

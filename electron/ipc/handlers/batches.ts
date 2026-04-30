@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { safePreOperationBackup } from '../../backup';
 import { logDbWrite } from '../../db';
+import { syncMedicinesMirror } from '../../medicinesMirrorDb';
 import { idSchema } from '../validation';
 import type { IpcHandlerMap } from './types';
 
@@ -28,13 +29,17 @@ export function createBatchesHandlers(deps: Deps): IpcHandlerMap {
     'batches:update': (payload) => {
       const parsed = z.object({ id: idSchema, body: z.record(z.string(), z.unknown()) }).parse(payload ?? {});
       logDbWrite('batches:update', { id: parsed.id });
-      return deps.updateBatch(parsed.id, parsed.body as Record<string, unknown>);
+      const updated = deps.updateBatch(parsed.id, parsed.body as Record<string, unknown>);
+      syncMedicinesMirror(deps.db);
+      return updated;
     },
     'batches:remove': (payload) => {
       const id = idSchema.parse(payload);
       safePreOperationBackup('pre-delete-batch-');
       logDbWrite('batches:remove', { id });
-      return deps.deleteBatch(id);
+      const removed = deps.deleteBatch(id);
+      syncMedicinesMirror(deps.db);
+      return removed;
     },
   };
 }

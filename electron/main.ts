@@ -9,6 +9,7 @@ import { exportDiagnosticsZip } from './diagnostics';
 import { createObservedDb } from './ipc/queryMonitor';
 import { registerLicenseHandlers } from './ipc/licenseHandlers';
 import { registerAuthHandlers } from './ipc/authHandlers';
+import { syncMedicinesMirror } from './medicinesMirrorDb';
 import { exportLogs, logger } from './logger';
 import { registerDomainHandlers } from './ipc/handlers';
 const require = createRequire(import.meta.url);
@@ -233,6 +234,7 @@ app.whenReady().then(() => {
     }
     backupOnStartup();
     runDailyBackup();
+    syncMedicinesMirror(db);
     logger.info('Application started', { dbPath: getDbPath() });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

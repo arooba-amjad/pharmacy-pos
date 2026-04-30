@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { safePreOperationBackup } from '../../backup';
 import { logDbWrite } from '../../db';
+import { syncMedicinesMirror } from '../../medicinesMirrorDb';
 import { logger } from '../../logger';
 import { MedicineRepo } from '../repos/medicineRepo';
 import { batchCreateSchema, idSchema, medicineCreateSchema, medicineUpdateSchema } from '../validation';
@@ -64,6 +65,7 @@ export function createMedicinesHandlers(deps: Deps): IpcHandlerMap {
         nowIso(),
         nowIso()
       );
+      syncMedicinesMirror(db);
       return repo.byId(id);
     },
 
@@ -95,6 +97,7 @@ export function createMedicinesHandlers(deps: Deps): IpcHandlerMap {
         parsed.id
       );
       if (!info.changes) throw new Error('Medicine not found.');
+      syncMedicinesMirror(db);
       return repo.byId(parsed.id);
     },
 
@@ -103,6 +106,7 @@ export function createMedicinesHandlers(deps: Deps): IpcHandlerMap {
       safePreOperationBackup('pre-delete-medicine-');
       logDbWrite('medicines:remove', { id });
       db.prepare('UPDATE medicines SET is_active = 0, updated_at = ? WHERE id = ?').run(nowIso(), id);
+      syncMedicinesMirror(db);
       logger.info('Medicine soft-deleted', { id });
       return { deleted: true };
     },
@@ -126,6 +130,7 @@ export function createMedicinesHandlers(deps: Deps): IpcHandlerMap {
         parsed.body.salePricePerPack,
         nowIso()
       );
+      syncMedicinesMirror(db);
       return db.prepare('SELECT * FROM batches WHERE id = ?').get(rowId);
     },
   };
