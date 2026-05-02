@@ -22,7 +22,26 @@ export const medicineCreateSchema = z.object({
   salePerPack: z.coerce.number().min(0).optional().default(0),
 });
 
-export const medicineUpdateSchema = medicineCreateSchema.partial();
+// Important: update schema must NOT apply create-time defaults.
+// Otherwise omitted fields (e.g. tabletsPerPack) get defaulted and overwrite existing values.
+export const medicineUpdateSchema = z.object({
+  id: z.string().trim().optional(),
+  name: z.string().trim().min(1).optional(),
+  generic: z.string().optional(),
+  type: z.string().optional(),
+  category: z.string().optional(),
+  unitType: z.string().optional(),
+  unit: z.string().optional(),
+  tabletsPerPack: z.coerce.number().int().min(1).optional(),
+  volumeMl: z.coerce.number().min(0).optional(),
+  supplierId: z.string().nullable().optional(),
+  supplierName: z.string().optional(),
+  manufacturerId: z.string().nullable().optional(),
+  manufacturerName: z.string().optional(),
+  lowStockThreshold: z.coerce.number().min(0).optional(),
+  purchasePerPack: z.coerce.number().min(0).optional(),
+  salePerPack: z.coerce.number().min(0).optional(),
+});
 
 export const batchCreateSchema = z.object({
   id: z.string().trim().optional(),
