@@ -8,6 +8,7 @@ import type { IpcHandlerMap } from './types';
 type DbLike = {
   prepare: (sql: string) => {
     run: (...args: unknown[]) => { changes: number };
+    get: (...args: unknown[]) => unknown;
     all: (...args: unknown[]) => any[];
   };
   transaction: <T extends (...args: never[]) => unknown>(fn: T) => T;
@@ -44,8 +45,15 @@ export function createPurchasesHandlers(deps: Deps): IpcHandlerMap {
       const id = idSchema.parse(payload);
       safePreOperationBackup('pre-delete-purchase-');
       logDbWrite('purchases:remove', { id });
-      deps.db.prepare('DELETE FROM purchases WHERE id = ?').run(id);
-      return { deleted: true };
+      return runInTransaction(deps.db, () => {
+        const purchase = deps.db
+          .prepare('SELECT id FROM purchases WHERE id = ?')
+          .get(id) as { id: string } | undefined;
+        if (!purchase) throw new Error('Purchase not found.');
+
+        deps.db.prepare('DELETE FROM purchases WHERE id = ?').run(id);
+        return { deleted: true };
+      });
     },
   };
 }

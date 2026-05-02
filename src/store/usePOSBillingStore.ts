@@ -1992,13 +1992,13 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
 
   deletePurchase: async (purchaseId) => {
     const p = get().purchases.find((x) => x.id === purchaseId);
-    if (!p || p.status !== 'pending') return false;
+    if (!p) return false;
     const prev = structuredClone(get().purchases);
     set((s) => ({ purchases: s.purchases.filter((x) => x.id !== purchaseId) }));
     try {
       await posApi.purchases.removePending(purchaseId);
       await get().hydrateBusinessData();
-      toastMutationSuccess('Draft purchase deleted');
+      toastMutationSuccess(p.status === 'pending' ? 'Draft purchase deleted' : 'Purchase invoice deleted');
       return true;
     } catch (error) {
       set({ purchases: prev });

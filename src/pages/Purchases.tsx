@@ -978,20 +978,22 @@ export const Purchases: React.FC = () => {
                             Receive
                           </button>
                         ) : null}
-                        {p.status === 'pending' ? (
-                          <button
-                            type="button"
-                            title="Delete"
-                            onClick={async () => {
-                              if (!window.confirm(`Delete draft ${p.grnNo}?`)) return;
-                              const ok = await deletePurchase(p.id);
-                              if (!ok) setActionError('Could not delete this draft on the server.');
-                            }}
-                            className="rounded-lg border border-slate-200 p-2 text-red-600 hover:bg-red-50 dark:border-zinc-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        ) : null}
+                        <button
+                          type="button"
+                          title="Delete"
+                          onClick={async () => {
+                            const prompt =
+                              p.status === 'pending'
+                                ? `Delete draft ${p.grnNo}?`
+                                : `Delete received invoice ${p.grnNo}?`;
+                            if (!window.confirm(prompt)) return;
+                            const ok = await deletePurchase(p.id);
+                            if (!ok) setActionError('Could not delete this invoice on the server.');
+                          }}
+                          className="rounded-lg border border-slate-200 p-2 text-red-600 hover:bg-red-50 dark:border-zinc-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
                   </li>
