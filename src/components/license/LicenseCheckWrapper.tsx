@@ -17,6 +17,7 @@ type GateState =
 export const LicenseCheckWrapper: React.FC<Props> = ({ children }) => {
   const [gate, setGate] = useState<GateState>({ phase: 'loading' });
   const [retrying, setRetrying] = useState(false);
+  const [showOfflineBanner, setShowOfflineBanner] = useState(false);
 
   const runCheck = useCallback(async () => {
     if (!window.api?.license) {
@@ -62,6 +63,18 @@ export const LicenseCheckWrapper: React.FC<Props> = ({ children }) => {
     return () => window.clearTimeout(id);
   }, [runCheck]);
 
+  useEffect(() => {
+    if (gate.phase !== 'ready' || !gate.offlineMessage) {
+      setShowOfflineBanner(false);
+      return;
+    }
+    setShowOfflineBanner(true);
+    const timer = window.setTimeout(() => {
+      setShowOfflineBanner(false);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [gate]);
+
   const loadingView = useMemo(
     () => (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 dark:bg-zinc-950">
@@ -98,7 +111,7 @@ export const LicenseCheckWrapper: React.FC<Props> = ({ children }) => {
 
   return (
     <>
-      {gate.offlineMessage ? (
+      {gate.offlineMessage && showOfflineBanner ? (
         <div className="fixed left-4 right-4 top-14 z-[70] inline-flex items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
           <WifiOff className="h-3.5 w-3.5" />
           {gate.offlineMessage}

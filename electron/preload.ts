@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld('api', {
     login: (payload: { identity: string; password: string }) => ipcRenderer.invoke('auth:login', payload),
     changePassword: (payload: { userId: string; currentPassword: string; nextPassword: string }) =>
       ipcRenderer.invoke('auth:changePassword', payload),
+    resetCredentials: (payload: { username: string; password: string }) =>
+      ipcRenderer.invoke('auth:resetCredentials', payload),
   },
   createBackup: () => ipcRenderer.invoke('backup:create'),
   listBackups: () => ipcRenderer.invoke('backup:list'),

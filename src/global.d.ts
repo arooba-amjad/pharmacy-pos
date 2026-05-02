@@ -44,6 +44,11 @@ declare global {
           currentPassword: string;
           nextPassword: string;
         }) => Promise<{ ok: boolean; message?: string }>;
+        resetCredentials: (payload: { username: string; password: string }) => Promise<{
+          ok: boolean;
+          message?: string;
+          user?: { id: string; username: string; email: string };
+        }>;
       };
       createBackup: () => Promise<string>;
       listBackups: () => Promise<string[]>;

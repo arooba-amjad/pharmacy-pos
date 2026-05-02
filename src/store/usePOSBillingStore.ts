@@ -769,7 +769,8 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
     const batchId = `b-${id}-def`;
     const normalizedType = payload.type;
     const normalizedUnitType = payload.unitType;
-    const isTablet = normalizedType === 'tablet';
+    // Any tablet-based unit type (tablet/capsule-style) should honor entered pack size.
+    const isTablet = normalizedUnitType === 'tablet';
     const tpp = isTablet ? Math.max(1, Math.floor(Number(payload.tabletsPerPack) || 0)) : 1;
     const unitFallback =
       normalizedUnitType === 'tablet'

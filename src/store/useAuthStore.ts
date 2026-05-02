@@ -16,6 +16,7 @@ interface AuthState {
   createFirstUser: (payload: { username: string; email: string; password: string }) => Promise<{ ok: true } | { ok: false; message: string }>;
   login: (identity: string, password: string) => Promise<{ ok: true } | { ok: false; message: string }>;
   changePassword: (currentPassword: string, nextPassword: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+  resetCredentials: (username: string, password: string) => Promise<{ ok: true } | { ok: false; message: string }>;
   logout: () => void;
 }
 
@@ -75,6 +76,21 @@ export const useAuthStore = create<AuthState>()(
           nextPassword,
         });
         if (!result?.ok) return { ok: false, message: result?.message ?? 'Could not change password.' };
+        return { ok: true };
+      },
+
+      resetCredentials: async (username, password) => {
+        const result = await window.api?.auth?.resetCredentials?.({
+          username: username.trim(),
+          password,
+        });
+        if (!result?.ok || !result.user) {
+          return { ok: false, message: result?.message ?? 'Could not reset credentials.' };
+        }
+        set({
+          user: { id: result.user.id, username: result.user.username, email: result.user.email },
+          isAuthenticated: false,
+        });
         return { ok: true };
       },
 

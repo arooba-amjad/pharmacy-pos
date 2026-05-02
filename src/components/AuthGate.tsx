@@ -7,14 +7,18 @@ import { cn } from '@/lib/utils';
 type Status = { kind: 'success' | 'error'; message: string } | null;
 
 export const AuthGate: React.FC = () => {
-  const { user, createFirstUser, login, refreshUserFromDb } = useAuthStore();
+  const { user, createFirstUser, login, resetCredentials, refreshUserFromDb } = useAuthStore();
   const [setupUsername, setSetupUsername] = useState('');
   const [setupEmail, setSetupEmail] = useState('');
   const [setupPassword, setSetupPassword] = useState('');
   const [identity, setIdentity] = useState('');
   const [password, setPassword] = useState('');
+  const [forgotUsername, setForgotUsername] = useState('');
+  const [forgotPassword, setForgotPassword] = useState('');
   const [showSetupPassword, setShowSetupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showForgotFlow, setShowForgotFlow] = useState(false);
   const [status, setStatus] = useState<Status>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
@@ -81,6 +85,45 @@ export const AuthGate: React.FC = () => {
       const res = await login(identity, password);
       if (!res.ok) setStatus({ kind: 'error', message: res.message });
       else setStatus({ kind: 'success', message: 'Login successful.' });
+    });
+  };
+
+  const openForgotFlow = async () => {
+    setStatus(null);
+    await withLoader(async () => {
+      const lic = await window.api?.license?.check?.();
+      if (!lic?.isValid) {
+        setStatus({ kind: 'error', message: lic?.message ?? 'License is not valid. Please activate first.' });
+        setShowForgotFlow(false);
+        return;
+      }
+      setForgotUsername(user?.username ?? '');
+      setForgotPassword('');
+      setShowForgotFlow(true);
+      setStatus({
+        kind: 'success',
+        message: 'License validated. Set a new username and password.',
+      });
+    });
+  };
+
+  const submitForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus(null);
+    await withLoader(async () => {
+      const res = await resetCredentials(forgotUsername, forgotPassword);
+      if (!res.ok) {
+        setStatus({ kind: 'error', message: res.message });
+        return;
+      }
+      setShowForgotFlow(false);
+      setIdentity(forgotUsername.trim());
+      setPassword('');
+      setShowForgotPassword(false);
+      setStatus({
+        kind: 'success',
+        message: 'Credentials changed. Please login with your new username and password.',
+      });
     });
   };
 
@@ -228,6 +271,65 @@ export const AuthGate: React.FC = () => {
                 )}
               </button>
             </form>
+          ) : showForgotFlow ? (
+            <form className="mt-7 space-y-4" onSubmit={submitForgot}>
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">New Username</span>
+                <input
+                  value={forgotUsername}
+                  onChange={(e) => setForgotUsername(e.target.value)}
+                  placeholder="Enter new username"
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-sky-300 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">New Password</span>
+                <div className="relative mt-1.5">
+                  <input
+                    type={showForgotPassword ? 'text' : 'password'}
+                    value={forgotPassword}
+                    onChange={(e) => setForgotPassword(e.target.value)}
+                    placeholder="Minimum 6 characters"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-11 text-sm text-slate-900 shadow-sm transition focus:border-sky-300 focus:outline-none focus:ring-4 focus:ring-sky-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                    aria-label={showForgotPassword ? 'Hide new password' : 'Show new password'}
+                  >
+                    {showForgotPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotFlow(false);
+                    setForgotPassword('');
+                    setStatus(null);
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 py-3 text-sm font-bold text-white shadow-lg shadow-sky-600/25 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-75"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Changing...
+                    </>
+                  ) : (
+                    'Change'
+                  )}
+                </button>
+              </div>
+            </form>
           ) : (
             <form className="mt-7 space-y-4" onSubmit={submitLogin}>
               <label className="block">
@@ -272,6 +374,15 @@ export const AuthGate: React.FC = () => {
                 ) : (
                   'Login'
                 )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void openForgotFlow();
+                }}
+                className="w-full text-center text-sm font-semibold text-sky-700 transition hover:text-sky-800 hover:underline"
+              >
+                Forgot Credentials
               </button>
             </form>
           )}

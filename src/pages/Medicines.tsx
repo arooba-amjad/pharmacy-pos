@@ -465,16 +465,19 @@ export const Medicines: React.FC = () => {
     const tpp = getMedicineTabletsPerPack(m);
     const spp = getMasterSalePricePerPack(m);
     const ppp = getMasterPurchasePricePerPack(m);
-    const sup = m.supplierId ? suppliers.find((s) => s.id === m.supplierId) : null;
+    const supplierById = m.supplierId ? suppliers.find((s) => s.id === m.supplierId) : null;
+    const supplierNameFallback = (m as Medicine & { supplierName?: string }).supplierName ?? '';
+    const manufacturerById = m.manufacturerId ? manufacturers.find((x) => x.id === m.manufacturerId) : null;
+    const manufacturerName = (manufacturerById?.name ?? m.manufacturer ?? '').trim();
     const defLow = useSettingsStore.getState().lowStockThreshold;
     setForm({
       name: m.name,
       generic: m.generic,
-      manufacturer: m.manufacturer ?? '',
+      manufacturer: manufacturerName,
       unit: m.unit || defaults.unit,
       type: normalizeMedicineType((m as Medicine & { type?: string }).type ?? medType),
       unitType: m.unitType ?? defaults.unitType,
-      tabletsPerPack: String((defaults.unitType === 'tablet' && !isGeneralType(medType)) ? tpp : 1),
+      tabletsPerPack: String(tpp),
       purchasePerPack: ppp != null ? String(ppp) : '',
       salePerPack: spp != null ? String(spp) : '',
       packLabel: m.packSize ?? '',
@@ -482,9 +485,10 @@ export const Medicines: React.FC = () => {
         m.lowStockThreshold != null ? String(m.lowStockThreshold) : String(Math.max(0, Math.floor(defLow))),
       volume: m.volume != null ? String(m.volume) : defaults.volume,
       supplierId: m.supplierId ?? '',
-      supplierSearch: sup?.name ?? '',
+      supplierSearch: supplierById?.name ?? supplierNameFallback,
       manufacturerId:
-        manufacturers.find((x) => x.name.trim().toLowerCase() === (m.manufacturer ?? '').trim().toLowerCase())?.id ??
+        manufacturerById?.id ??
+        manufacturers.find((x) => x.name.trim().toLowerCase() === manufacturerName.toLowerCase())?.id ??
         '',
       newSupplierPhone: '',
       newManufacturerPhone: '',
@@ -499,10 +503,9 @@ export const Medicines: React.FC = () => {
     if (!form.generic.trim()) e.generic = 'Required';
     if (!form.type) e.type = 'Select a medicine type';
     if (!isGeneralForm && !form.unitType) e.unit = 'Unit must be defined';
-    const isTablet = !isGeneralForm && selectedType.unitType === 'tablet';
     const needsVolume = !isGeneralForm && selectedType.unitType === 'ml';
     const tpp = Math.floor(Number(form.tabletsPerPack));
-    if (isTablet && (!Number.isFinite(tpp) || tpp < 1)) e.tabletsPerPack = 'Pack size must be a whole number ≥ 1';
+    if (!Number.isFinite(tpp) || tpp < 1) e.tabletsPerPack = 'Quantity per pack must be a whole number ≥ 1';
     const volume = Number(form.volume);
     if (needsVolume && (!Number.isFinite(volume) || volume <= 0)) e.volume = 'Enter valid volume in ml';
     const salePp = Number(form.salePerPack);
@@ -531,7 +534,7 @@ export const Medicines: React.FC = () => {
     const typeDefaults = medicineTypes.find((t) => t.value === normalizedType) ?? TYPE_DEFAULTS[normalizedType] ?? TYPE_DEFAULTS.tablet;
     const isGeneral = isGeneralType(normalizedType);
     const isTablet = !isGeneral && typeDefaults.unitType === 'tablet';
-    const tpp = isTablet ? Math.max(1, Math.floor(Number(form.tabletsPerPack))) : 1;
+    const tpp = Math.max(1, Math.floor(Number(form.tabletsPerPack)));
     const salePp = Number(form.salePerPack);
     const purchasePp = Number(form.purchasePerPack);
     const volume = Number(form.volume);
@@ -1061,7 +1064,7 @@ export const Medicines: React.FC = () => {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+              <div className="relative z-10 min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
               <FloatField
                 id="mf-name"
                 label="Medicine name *"
@@ -1171,22 +1174,22 @@ export const Medicines: React.FC = () => {
                   onChange={(v) => setForm((f) => ({ ...f, unit: v }))}
                 />
               ) : null}
-              {!isGeneralForm && isTabletForm ? (
-                <div className="space-y-1">
-                  <FloatField
-                    id="mf-tpp"
-                    label="Pack size (tablets per pack) *"
-                    value={form.tabletsPerPack}
-                    onChange={(v) => setForm((f) => ({ ...f, tabletsPerPack: v }))}
-                    type="number"
-                    inputMode="numeric"
-                    min="1"
-                    step="1"
-                    error={errors.tabletsPerPack}
-                  />
-                  <p className="text-xs text-slate-500 dark:text-zinc-500">Tablet count per pack</p>
-                </div>
-              ) : null}
+              <div className="space-y-1">
+                <FloatField
+                  id="mf-tpp"
+                  label="Quantity per pack *"
+                  value={form.tabletsPerPack}
+                  onChange={(v) => setForm((f) => ({ ...f, tabletsPerPack: v }))}
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  step="1"
+                  error={errors.tabletsPerPack}
+                />
+                <p className="text-xs text-slate-500 dark:text-zinc-500">
+                  Number of units in one pack for this medicine type.
+                </p>
+              </div>
               {!isGeneralForm && isVolumeForm ? (
                 <FloatField
                   id="mf-volume"
@@ -1275,7 +1278,7 @@ export const Medicines: React.FC = () => {
                 ) : null}
               </p>
               </div>
-              <div className="flex shrink-0 gap-2 border-t border-slate-100 bg-slate-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+              <div className="relative z-20 flex shrink-0 gap-2 border-t border-slate-100 bg-slate-50/50 p-4 pointer-events-auto dark:border-zinc-800 dark:bg-zinc-900/40">
                 <button
                   type="button"
                   onClick={() => setSheet(null)}

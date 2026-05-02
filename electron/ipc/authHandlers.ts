@@ -1,10 +1,11 @@
 import crypto from 'node:crypto';
 import { ipcMain } from 'electron';
 import { z } from 'zod';
+import { LicenseService } from '../license/licenseService';
 
 type DbLike = {
   prepare: (sql: string) => {
-    get: (...args: unknown[]) => any;
+    get: (...args: unknown[]) => unknown;
     run: (...args: unknown[]) => { changes: number };
   };
 };
@@ -34,11 +35,17 @@ const changePasswordSchema = z.object({
   nextPassword: z.string().min(6),
 });
 
+const resetCredentialsSchema = z.object({
+  username: z.string().trim().min(1),
+  password: z.string().min(6),
+});
+
 function hashPassword(password: string, salt: string): string {
   return crypto.scryptSync(password, salt, 64).toString('hex');
 }
 
 export function registerAuthHandlers(db: DbLike): void {
+  const licenseService = new LicenseService();
   ipcMain.handle('auth:status', () => {
     const row = db.prepare('SELECT id, username, email FROM app_users ORDER BY created_at ASC LIMIT 1').get() as
       | { id: string; username: string; email: string }
@@ -100,6 +107,35 @@ export function registerAuthHandlers(db: DbLike): void {
       row.id
     );
     return { ok: true };
+  });
+
+  ipcMain.handle('auth:resetCredentials', async (_event, payload) => {
+    const parsed = resetCredentialsSchema.parse(payload ?? {});
+    const licenseResult = await licenseService.checkLicense();
+    if (!licenseResult.isValid) {
+      return { ok: false, message: 'License is not valid. Activate or renew your license first.' };
+    }
+
+    const row = db.prepare('SELECT * FROM app_users ORDER BY created_at ASC LIMIT 1').get() as UserRow | undefined;
+    if (!row) return { ok: false, message: 'No account found.' };
+
+    const duplicate = db
+      .prepare('SELECT id FROM app_users WHERE lower(username) = lower(?) AND id != ? LIMIT 1')
+      .get(parsed.username, row.id) as { id: string } | undefined;
+    if (duplicate) {
+      return { ok: false, message: 'Username is already in use.' };
+    }
+
+    const nextSalt = crypto.randomBytes(16).toString('hex');
+    const nextHash = hashPassword(parsed.password, nextSalt);
+    db.prepare('UPDATE app_users SET username = ?, password_hash = ?, password_salt = ?, updated_at = ? WHERE id = ?').run(
+      parsed.username,
+      nextHash,
+      nextSalt,
+      new Date().toISOString(),
+      row.id
+    );
+    return { ok: true, user: { id: row.id, username: parsed.username, email: row.email } };
   });
 }
 

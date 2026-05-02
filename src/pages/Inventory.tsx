@@ -155,6 +155,7 @@ export const Inventory: React.FC = () => {
     batchNo: '',
     expiryDate: defaultFutureDate(180),
     quantityPackets: 0,
+    quantityTablets: 0,
     purchasePricePerPack: 0,
     salePricePerPack: 0,
   });
@@ -185,6 +186,7 @@ export const Inventory: React.FC = () => {
       batchNo: ref?.batchNo ?? '',
       expiryDate: defaultFutureDate(180),
       quantityPackets: 0,
+      quantityTablets: 0,
       purchasePricePerPack: Math.round(purchasePp * 100) / 100,
       salePricePerPack: Math.max(0.01, Math.round(salePp * 100) / 100),
     });
@@ -245,7 +247,8 @@ export const Inventory: React.FC = () => {
     if (!med) return;
     const tpp = getMedicineTabletsPerPack(med);
     const packs = Math.max(0, Math.floor(Number(newBatch.quantityPackets) || 0));
-    const tablets = packs * Math.max(1, tpp);
+    const extraTablets = Math.max(0, Math.floor(Number(newBatch.quantityTablets) || 0));
+    const tablets = packs * Math.max(1, tpp) + extraTablets;
     setAdjustInlineError(null);
     const bn = newBatch.batchNo.trim();
     if (!bn) {
@@ -270,7 +273,13 @@ export const Inventory: React.FC = () => {
       if (packs > 0) {
         adjustBatchStock(med.id, existing.id, tablets);
         showToast(
-          `Batch “${existing.batchNo}” updated and ${packs} pack${packs === 1 ? '' : 's'} (${tablets} tablets) added. Sale/purchase prices were applied to all batches and POS.`,
+          `Batch “${existing.batchNo}” updated and ${packs} pack${packs === 1 ? '' : 's'} + ${extraTablets} ${med.unit}${extraTablets === 1 ? '' : 's'} (${tablets} tablets total) added. Sale/purchase prices were applied to all batches and POS.`,
+          'success'
+        );
+      } else if (extraTablets > 0) {
+        adjustBatchStock(med.id, existing.id, tablets);
+        showToast(
+          `Batch “${existing.batchNo}” updated and ${extraTablets} ${med.unit}${extraTablets === 1 ? '' : 's'} added. Sale/purchase prices were applied to all batches and POS.`,
           'success'
         );
       } else {
@@ -280,9 +289,9 @@ export const Inventory: React.FC = () => {
         );
       }
     } else {
-      if (packs <= 0) {
-        setAdjustInlineError('Enter quantity in packs (minimum 1) for a new batch.');
-        showToast('Enter how many packs you are receiving for a new batch.', 'error');
+      if (tablets <= 0) {
+        setAdjustInlineError('Enter quantity in packs and/or tablets (minimum 1 unit) for a new batch.');
+        showToast('Enter how many packs and/or tablets you are receiving for a new batch.', 'error');
         return;
       }
       addBatchToMedicine(med.id, {
@@ -293,7 +302,10 @@ export const Inventory: React.FC = () => {
         salePricePerPack: tpp >= 2 ? salePp : salePt,
         costPricePerTablet: costPt,
       });
-      showToast(`New batch “${bn}” saved with ${packs} pack${packs === 1 ? '' : 's'}.`, 'success');
+      showToast(
+        `New batch “${bn}” saved with ${packs} pack${packs === 1 ? '' : 's'} + ${extraTablets} ${med.unit}${extraTablets === 1 ? '' : 's'}.`,
+        'success'
+      );
     }
     const nextMed = usePOSBillingStore.getState().medicines.find((m) => m.id === med.id);
     if (nextMed) initAdjustFormForMedicine(nextMed);
@@ -320,7 +332,8 @@ export const Inventory: React.FC = () => {
     if (!adjustMedicine) return null;
     const tpp = Math.max(1, getMedicineTabletsPerPack(adjustMedicine));
     const addPacks = Math.max(0, Math.floor(Number(newBatch.quantityPackets) || 0));
-    const addTablets = addPacks * tpp;
+    const directTablets = Math.max(0, Math.floor(Number(newBatch.quantityTablets) || 0));
+    const addTablets = addPacks * tpp + directTablets;
     const target = adjustBatchMatch ?? nearestSellableBatch(adjustMedicine) ?? adjustMedicine.batches[0] ?? null;
     if (!target) return null;
     return {
@@ -328,10 +341,11 @@ export const Inventory: React.FC = () => {
       currentTablets: target.totalTablets,
       projectedTablets: target.totalTablets + addTablets,
       addPacks,
+      directTablets,
       addTablets,
       tpp,
     };
-  }, [adjustMedicine, newBatch.quantityPackets, adjustBatchMatch]);
+  }, [adjustMedicine, newBatch.quantityPackets, newBatch.quantityTablets, adjustBatchMatch]);
 
   useEffect(() => {
     if (!adjustMedicine || !newBatch.batchNo.trim()) return;
@@ -1070,17 +1084,30 @@ export const Inventory: React.FC = () => {
                       }}
                     />
                   </label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-zinc-400">
+                    Quantity ({adjustMedicine.unit})
+                    <input
+                      type="number"
+                      min={0}
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                      value={newBatch.quantityTablets || ''}
+                      onChange={(e) => {
+                        setAdjustInlineError(null);
+                        setNewBatch((s) => ({ ...s, quantityTablets: Number(e.target.value) }));
+                      }}
+                    />
+                  </label>
                   <p className="col-span-2 text-[11px] leading-snug text-slate-500 dark:text-zinc-400">
                     Pack size:{' '}
                     <span className="font-bold text-slate-700 dark:text-zinc-200">
                       {getMedicineTabletsPerPack(adjustMedicine)} tablets per pack
                     </span>
-                    . Stock is stored as tablets (packs × pack size).
+                    . Stock is stored as tablets (packs x pack size + direct units).
                     {adjustBatchMatch ? (
                       <>
                         {' '}
-                        For an existing batch, leave packs at <span className="font-bold">0</span> if you only need to
-                        correct expiry or pricing.
+                        For an existing batch, leave both quantities at <span className="font-bold">0</span> if you only
+                        need to correct expiry or pricing.
                       </>
                     ) : null}
                   </p>
@@ -1118,8 +1145,8 @@ export const Inventory: React.FC = () => {
                       </p>
                       <p className="mt-0.5">
                         Current {formatPacksPlusTablets(adjustPreview.currentTablets, adjustPreview.tpp, adjustMedicine.unit)}
-                        {adjustPreview.addPacks > 0
-                          ? ` + ${adjustPreview.addPacks} pack${adjustPreview.addPacks === 1 ? '' : 's'} = ${formatPacksPlusTablets(
+                        {adjustPreview.addTablets > 0
+                          ? ` + ${adjustPreview.addPacks} pack${adjustPreview.addPacks === 1 ? '' : 's'} + ${adjustPreview.directTablets} ${adjustMedicine.unit}${adjustPreview.directTablets === 1 ? '' : 's'} = ${formatPacksPlusTablets(
                               adjustPreview.projectedTablets,
                               adjustPreview.tpp,
                               adjustMedicine.unit
