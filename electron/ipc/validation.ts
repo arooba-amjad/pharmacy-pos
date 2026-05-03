@@ -74,6 +74,8 @@ export const saleCreateSchema = z.object({
   customerId: z.string().trim().optional(),
   customerName: z.string().optional(),
   paymentMethod: z.enum(['cash', 'card', 'credit']).default('cash'),
+  /** Passed through to backend `createSale` (retail vs wholesale / bulk). */
+  pricingChannel: z.enum(['retail', 'wholesale']).optional(),
   creditAmount: z.coerce.number().min(0).optional(),
   counterPayment: z.coerce.number().min(0).optional(),
   discount: z.coerce.number().min(0).optional().default(0),
@@ -84,6 +86,10 @@ export const saleCreateSchema = z.object({
         medicineId: z.string().trim().min(1),
         quantityMode: z.enum(['tablet', 'packet']).default('tablet'),
         quantity: z.coerce.number().int().positive(),
+        /** Canonical stock tablets for this line — must match POS `lineTotalTablets`. */
+        stockTablets: z.coerce.number().int().positive().optional(),
+        /** Custom negotiated unit price (per pack or per loose unit, matching quantity mode). */
+        unitPrice: z.coerce.number().min(0).optional(),
       })
     )
     .min(1),

@@ -27,6 +27,12 @@ import {
   getMedicineAvailability,
   getMedicineAvailabilityWithCart,
 } from '@/lib/posSearchHelpers';
+import {
+  effectiveMedicineUnitType,
+  isGeneralMedicineProfile,
+  posLooseSellShortLabel,
+  quantityPerPackFieldLabels,
+} from '@/lib/medicinePackLabels';
 import { motion, AnimatePresence } from 'framer-motion';
 import { isExpired, isExpiringSoon } from '@/lib/posDates';
 
@@ -47,6 +53,7 @@ export const Cart: React.FC = () => {
   const setLineQuantity = usePOSBillingStore((s) => s.setLineQuantity);
   const setLineBatch = usePOSBillingStore((s) => s.setLineBatch);
   const setLineUnitPrice = usePOSBillingStore((s) => s.setLineUnitPrice);
+  const posPricingChannel = usePOSBillingStore((s) => s.posPricingChannel);
   const setLineQuantityMode = usePOSBillingStore((s) => s.setLineQuantityMode);
   const showToast = useToastStore((s) => s.show);
   const expDays = useSettingsStore((s) => Math.max(1, s.expiryAlertDays ?? 75));
@@ -76,8 +83,8 @@ export const Cart: React.FC = () => {
           <div className="min-w-0">
             <h2 className="text-lg font-bold tracking-tight leading-tight">Active cart</h2>
             <p className="text-[11px] text-muted-foreground font-medium">
-              Tab qty → next line · ↑↓ lines · <span className="font-mono">T</span> /{' '}
-              <span className="font-mono">P</span> unit · * / − qty · Enter · Del
+              Tab qty → next line · ↑↓ lines · <span className="font-mono">T</span> loose ·{' '}
+              <span className="font-mono">P</span> pack · * / − qty · Enter · Del
             </p>
           </div>
         </div>
@@ -109,6 +116,14 @@ export const Cart: React.FC = () => {
             const showLatePrefWarning =
               Boolean(pref && fefoHead && med && preferredIsLaterExpiryThanBatch(med, pref, fefoHead));
             const breakdown = formatCartBatchBreakdown(line);
+            const packLbl = med
+              ? quantityPerPackFieldLabels({
+                  isGeneral: isGeneralMedicineProfile(med),
+                  unitType: effectiveMedicineUnitType(med),
+                })
+              : null;
+            const looseShort = med ? posLooseSellShortLabel(med) : 'Tablet';
+            const loosePlural = packLbl?.looseStockPlural ?? 'tablets';
 
             return (
               <motion.div
@@ -152,7 +167,7 @@ export const Cart: React.FC = () => {
                       {formatSellQuantityLabel(line)}
                       <span className="text-muted-foreground font-medium">
                         {' '}
-                        · {line.quantityMode === 'packet' ? 'Packet' : 'Tablet'}
+                        · {line.quantityMode === 'packet' ? 'Pack' : looseShort}
                       </span>
                     </p>
                     {line.allocationError ? (
@@ -169,7 +184,7 @@ export const Cart: React.FC = () => {
 
                 {med ? (
                   <p className="text-[10px] font-semibold text-muted-foreground tabular-nums mb-2">
-                    Shelf tablets:{' '}
+                    Shelf {loosePlural}:{' '}
                     <span className="text-foreground">{sellableQty}</span>
                     {' → '}
                     <span className={previewQty <= 0 && sellableQty > 0 ? 'text-amber-700' : 'text-foreground'}>
@@ -193,7 +208,11 @@ export const Cart: React.FC = () => {
                         type="button"
                         tabIndex={-1}
                         disabled={line.quantityMode === 'tablet'}
-                        title={line.quantityMode === 'tablet' ? 'Loose units' : 'Switch to loose units (T)'}
+                        title={
+                          line.quantityMode === 'tablet'
+                            ? `Loose ${loosePlural}`
+                            : `Switch to loose ${loosePlural} (T)`
+                        }
                         onClick={() => {
                           if (line.quantityMode === 'tablet') return;
                           const r = setLineQuantityMode(line.lineId, 'tablet');
@@ -206,7 +225,7 @@ export const Cart: React.FC = () => {
                             : 'text-slate-600 hover:bg-white disabled:opacity-50 dark:text-zinc-300 dark:hover:bg-card'
                         )}
                       >
-                        Tablet
+                        {looseShort}
                       </button>
                       <button
                         type="button"
@@ -214,10 +233,10 @@ export const Cart: React.FC = () => {
                         disabled={line.quantityMode === 'packet' || !canPacket}
                         title={
                           !canPacket
-                            ? `Need ${line.tabletsPerPack} sellable units across lots (after cart).`
+                            ? `Need ${line.tabletsPerPack} sellable ${loosePlural} across lots (after cart).`
                             : line.quantityMode === 'packet'
-                              ? 'Full packs'
-                              : 'Switch to full packs (P)'
+                              ? 'Commercial packs'
+                              : 'Switch to commercial packs (P)'
                         }
                         onClick={() => {
                           if (line.quantityMode === 'packet' || !canPacket) return;
@@ -231,7 +250,7 @@ export const Cart: React.FC = () => {
                             : 'text-slate-600 hover:bg-white disabled:opacity-45 dark:text-zinc-300 dark:hover:bg-card'
                         )}
                       >
-                        Packet
+                        Pack
                       </button>
                     </div>
                   </div>
@@ -391,7 +410,13 @@ export const Cart: React.FC = () => {
                       min={0.01}
                       step={0.01}
                       value={line.unitPrice}
+                      readOnly={posPricingChannel === 'retail'}
                       tabIndex={0}
+                      title={
+                        posPricingChannel === 'retail'
+                          ? 'Retail mode uses shelf prices. Switch to Wholesale / bulk to edit.'
+                          : undefined
+                      }
                       onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => {
                         const idx = cart.findIndex((l) => l.lineId === line.lineId);
@@ -405,7 +430,11 @@ export const Cart: React.FC = () => {
                         if (!Number.isFinite(v)) return;
                         setLineUnitPrice(line.lineId, v);
                       }}
-                      className="w-28 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm font-bold tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:bg-card/50 dark:border-border/60"
+                      className={cn(
+                        'w-28 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-sm font-bold tabular-nums focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 dark:bg-card/50 dark:border-border/60',
+                        posPricingChannel === 'retail' &&
+                          'cursor-default bg-slate-50 text-slate-700 dark:bg-muted/50 dark:text-zinc-300'
+                      )}
                     />
                   </div>
 

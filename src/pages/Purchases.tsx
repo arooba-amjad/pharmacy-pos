@@ -20,6 +20,11 @@ import { displayManufacturer } from '@/lib/medicineDisplay';
 import { getMedicineAvailability, getMedicineLowStockThresholdTablets } from '@/lib/posSearchHelpers';
 import { formatPacksPlusTablets, getMedicineTabletsPerPack, tabletPurchaseFromPack } from '@/lib/stockUnits';
 import { getMasterPurchasePricePerPack } from '@/lib/medicineMasterHelpers';
+import {
+  effectiveMedicineUnitType,
+  isGeneralMedicineProfile,
+  quantityPerPackFieldLabels,
+} from '@/lib/medicinePackLabels';
 
 interface LineDraft {
   id: string;
@@ -738,6 +743,10 @@ export const Purchases: React.FC = () => {
                         const tpp = getMedicineTabletsPerPack(m);
                         const sell = sellableTablets(m);
                         const th = getMedicineLowStockThresholdTablets(m);
+                        const reorderPackLbl = quantityPerPackFieldLabels({
+                          isGeneral: isGeneralMedicineProfile(m),
+                          unitType: effectiveMedicineUnitType(m),
+                        });
                         const low = isLowStockForReorder(m);
                         const tier = stockTier(m);
                         const pick = orderPicks[m.id] ?? { include: false, packs: '1' };
@@ -775,7 +784,8 @@ export const Purchases: React.FC = () => {
                                 <p className="text-sm text-slate-600 dark:text-zinc-400">{m.generic}</p>
                                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-slate-600 dark:text-zinc-400">
                                   <span>
-                                    Pack: <strong className="text-slate-900 dark:text-white">{tpp}</strong> tablets
+                                    Pack: <strong className="text-slate-900 dark:text-white">{tpp}</strong>{' '}
+                                    {reorderPackLbl.looseStockPlural}
                                     {m.packSize ? <span className="text-slate-400"> · {m.packSize}</span> : null}
                                   </span>
                                   <span>
@@ -787,7 +797,7 @@ export const Purchases: React.FC = () => {
                                   <span>
                                     Low if ≤{' '}
                                     <strong className="tabular-nums text-slate-900 dark:text-white">{th}</strong>{' '}
-                                    tablets
+                                    {reorderPackLbl.looseStockPlural}
                                   </span>
                                 </div>
                               </div>
@@ -1269,6 +1279,12 @@ export const Purchases: React.FC = () => {
             <ul className="mt-4 max-h-56 space-y-2 overflow-y-auto text-sm">
               {viewPurchase.lines.map((l) => {
                 const med = medicines.find((x) => x.id === l.medicineId);
+                const viewLineStockLbl = med
+                  ? quantityPerPackFieldLabels({
+                      isGeneral: isGeneralMedicineProfile(med),
+                      unitType: effectiveMedicineUnitType(med),
+                    }).looseStockPlural
+                  : 'units';
                 return (
                   <li key={l.id} className="flex justify-between gap-2 border-b border-slate-50 pb-2 dark:border-zinc-800">
                     <div className="min-w-0">
@@ -1277,7 +1293,7 @@ export const Purchases: React.FC = () => {
                         Mfr. {displayManufacturer(med)}
                       </p>
                       <p className="text-slate-500">
-                        {l.quantity} tablets
+                        {l.quantity} {viewLineStockLbl}
                         {l.enteredAsPackets ? ' (from packs)' : ''}
                       </p>
                     </div>

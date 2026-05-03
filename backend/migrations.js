@@ -58,6 +58,19 @@ export const MIGRATIONS = [
       }
     },
   },
+  {
+    version: 4,
+    description: 'Sales pricing channel (retail vs wholesale) for invoice labeling',
+    up(db) {
+      const cols = db.prepare("PRAGMA table_info('sales')").all();
+      const hasCh = cols.some((c) => String(c.name).toLowerCase() === 'pricing_channel');
+      if (!hasCh) {
+        db.exec(
+          "ALTER TABLE sales ADD COLUMN pricing_channel TEXT NOT NULL DEFAULT 'retail';"
+        );
+      }
+    },
+  },
 ];
 
 /**

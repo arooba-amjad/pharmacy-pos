@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import type { CartQuantityMode } from '@/types';
 
 function clampOpenMode(
@@ -18,39 +18,54 @@ function clampOpenMode(
 export interface PosAddQuantityModalProps {
   open: boolean;
   medicineName: string;
-  /** Unit word for loose sales (e.g. "tablet", "capsule"). */
+  /** Unit word for loose sales (e.g. "tablet", "vial"). */
   tabletUnitLabel: string;
+  /** POS toggle label for loose mode (e.g. Tablet, Vial). Defaults to Tablet. */
+  looseModeLabel?: string;
+  /** POS toggle label for pack mode. Defaults to Pack. */
+  packModeLabel?: string;
   canTablet: boolean;
   canPacket: boolean;
   defaultMode: CartQuantityMode;
+  /** Wholesale/bulk: optional custom sale price before add (per unit or per pack matching mode). */
+  wholesalePricingEnabled?: boolean;
+  suggestedSalePerTablet?: number;
+  suggestedSalePerPack?: number;
   onClose: () => void;
-  /** Called with quantity ≥ 1 and the sell-as mode chosen in the modal. */
-  onConfirm: (quantity: number, mode: CartQuantityMode) => void;
+  /** Optional third arg = custom sale price for line (same basis as mode: per unit or per pack). */
+  onConfirm: (quantity: number, mode: CartQuantityMode, salePriceOverride?: number) => void;
 }
 
 export function PosAddQuantityModal({
   open,
   medicineName,
   tabletUnitLabel,
+  looseModeLabel = 'Tablet',
+  packModeLabel = 'Pack',
   canTablet,
   canPacket,
   defaultMode,
+  wholesalePricingEnabled = false,
+  suggestedSalePerTablet = 0,
+  suggestedSalePerPack = 0,
   onClose,
   onConfirm,
 }: PosAddQuantityModalProps) {
   const [raw, setRaw] = useState('1');
+  const [salePriceRaw, setSalePriceRaw] = useState('');
   const [mode, setMode] = useState<CartQuantityMode>('tablet');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const quantityLabel = useMemo(() => {
-    if (mode === 'packet') return 'Number of packs';
+    if (mode === 'packet') return `Number of ${packModeLabel.toLowerCase()}s`;
     const u = tabletUnitLabel.trim() || 'tablets';
     return `Number of ${u}`;
-  }, [mode, tabletUnitLabel]);
+  }, [mode, tabletUnitLabel, packModeLabel]);
 
   useEffect(() => {
     if (!open) return;
     setRaw('1');
+    setSalePriceRaw('');
     setMode(clampOpenMode(defaultMode, canTablet, canPacket));
     const t = window.requestAnimationFrame(() => {
       inputRef.current?.focus();
@@ -59,13 +74,24 @@ export function PosAddQuantityModal({
     return () => window.cancelAnimationFrame(t);
   }, [open, canTablet, canPacket, defaultMode]);
 
+  const shelfHint = useMemo(() => {
+    if (!wholesalePricingEnabled) return '';
+    const shelf = mode === 'packet' ? suggestedSalePerPack : suggestedSalePerTablet;
+    return formatCurrency(Number.isFinite(shelf) && shelf > 0 ? shelf : 0);
+  }, [wholesalePricingEnabled, mode, suggestedSalePerPack, suggestedSalePerTablet]);
+
   const submit = useCallback(() => {
     const n = parseInt(raw.replace(/,/g, ''), 10);
     const q = Number.isFinite(n) && n >= 1 ? Math.min(999_999, n) : 1;
     const effectiveMode: CartQuantityMode =
       canPacket && mode === 'packet' ? 'packet' : canTablet ? 'tablet' : 'packet';
-    onConfirm(q, effectiveMode);
-  }, [raw, onConfirm, mode, canPacket, canTablet]);
+    let saleOverride: number | undefined;
+    if (wholesalePricingEnabled && salePriceRaw.trim()) {
+      const p = parseFloat(salePriceRaw.replace(/,/g, ''));
+      if (Number.isFinite(p) && p >= 0.01) saleOverride = Math.round(p * 100) / 100;
+    }
+    onConfirm(q, effectiveMode, saleOverride);
+  }, [raw, salePriceRaw, onConfirm, mode, canPacket, canTablet, wholesalePricingEnabled]);
 
   useEffect(() => {
     if (!open) return;
@@ -149,7 +175,7 @@ export function PosAddQuantityModal({
                   !canTablet && 'pointer-events-none opacity-40'
                 )}
               >
-                Tablet
+                {looseModeLabel}
                 <span className="ml-1 font-mono text-[10px] font-semibold opacity-80">T</span>
               </button>
               <button
@@ -164,7 +190,7 @@ export function PosAddQuantityModal({
                   !canPacket && 'pointer-events-none opacity-40'
                 )}
               >
-                Packet
+                {packModeLabel}
                 <span className="ml-1 font-mono text-[10px] font-semibold opacity-80">P</span>
               </button>
             </div>
@@ -186,11 +212,33 @@ export function PosAddQuantityModal({
             )}
           />
         </label>
+
+        {wholesalePricingEnabled ? (
+          <label className="mt-3 block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+            Sale price ({mode === 'packet' ? 'per pack' : 'per unit'}) — optional
+            <input
+              type="number"
+              min={0.01}
+              step={0.01}
+              value={salePriceRaw}
+              onChange={(e) => setSalePriceRaw(e.target.value)}
+              placeholder={shelfHint || 'Shelf price'}
+              className={cn(
+                'mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-semibold tabular-nums',
+                'outline-none ring-primary/25 focus:ring-2'
+              )}
+            />
+            <span className="mt-1 block font-normal normal-case text-muted-foreground">
+              Leave blank to use shelf price ({shelfHint}).
+            </span>
+          </label>
+        ) : null}
+
         <p className="mt-2 text-[10px] text-muted-foreground">
           {showSellAs ? (
             <>
-              <kbd className="rounded bg-muted px-1 font-mono">T</kbd> tablet ·{' '}
-              <kbd className="rounded bg-muted px-1 font-mono">P</kbd> packet ·{' '}
+              <kbd className="rounded bg-muted px-1 font-mono">T</kbd> {looseModeLabel.toLowerCase()} ·{' '}
+              <kbd className="rounded bg-muted px-1 font-mono">P</kbd> {packModeLabel.toLowerCase()} ·{' '}
             </>
           ) : null}
           <kbd className="rounded bg-muted px-1 font-mono">Enter</kbd> add ·{' '}

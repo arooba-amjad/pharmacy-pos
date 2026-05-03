@@ -143,6 +143,8 @@ export interface ServiceChargeSnapshot {
 export interface Sale {
   id: string;
   invoiceNo: string;
+  /** Persisted from checkout — wholesale/bulk channel shows “Bulk sale” in history. */
+  pricingChannel?: 'retail' | 'wholesale';
   customer: Customer | null;
   items: CartLine[];
   subtotal: number;

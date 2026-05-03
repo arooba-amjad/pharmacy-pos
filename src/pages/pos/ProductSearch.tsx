@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Search, Barcode, AlertTriangle, FlaskConical } from 'lucide-react';
-import { usePOSBillingStore } from '@/store/usePOSBillingStore';
+import { pickDefaultBatch, usePOSBillingStore } from '@/store/usePOSBillingStore';
 import { useToastStore } from '@/store/useToastStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useSubstitutionAnalyticsStore, type SubstitutionPickSource } from '@/store/useSubstitutionAnalyticsStore';
@@ -8,8 +8,14 @@ import {
   getMedicineAvailabilityWithCart,
   medicineMatchesQuery,
 } from '@/lib/posSearchHelpers';
+import {
+  effectiveMedicineUnitType,
+  isGeneralMedicineProfile,
+  posLooseSellShortLabel,
+  quantityPerPackFieldLabels,
+} from '@/lib/medicinePackLabels';
 import { formatPacksPlusTablets, getMedicineTabletsPerPack } from '@/lib/stockUnits';
-import { chooseInitialQuantityMode, packetModeAvailable, tabletModeAvailable } from '@/lib/posCartQuantity';
+import { packetModeAvailable, tabletModeAvailable } from '@/lib/posCartQuantity';
 import { cn, formatCurrency } from '@/lib/utils';
 import { displayManufacturer, displayMedicineNameWithType } from '@/lib/medicineDisplay';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -44,9 +50,12 @@ type PendingQtyPick = {
   medicineId: string;
   medicineName: string;
   tabletUnitLabel: string;
+  looseModeLabel: string;
   canTablet: boolean;
   canPacket: boolean;
   defaultMode: CartQuantityMode;
+  suggestedSalePerTablet: number;
+  suggestedSalePerPack: number;
   substitutionMeta?: SubstitutionMeta;
 };
 
@@ -54,6 +63,7 @@ export const ProductSearch: React.FC = () => {
   const medicines = usePOSBillingStore((s) => s.medicines);
   const cart = usePOSBillingStore((s) => s.cart);
   const addMedicineToCart = usePOSBillingStore((s) => s.addMedicineToCart);
+  const posPricingChannel = usePOSBillingStore((s) => s.posPricingChannel);
   const showToast = useToastStore((s) => s.show);
   const defaultFocusSearch = useSettingsStore((s) => s.defaultFocusSearch);
   const barcodeModeEnabled = useSettingsStore((s) => s.barcodeModeEnabled);
@@ -153,7 +163,8 @@ export const ProductSearch: React.FC = () => {
       medicineId: string,
       quantity: number,
       quantityMode: CartQuantityMode,
-      substitutionMeta?: SubstitutionMeta
+      substitutionMeta?: SubstitutionMeta,
+      salePriceOverride?: number
     ) => {
       if (substitutionMeta) {
         useSubstitutionAnalyticsStore.getState().logPick({
@@ -164,13 +175,21 @@ export const ProductSearch: React.FC = () => {
           medicines,
         });
       }
-      const res = addMedicineToCart(medicineId, { quantity, quantityMode });
+      const res = addMedicineToCart(medicineId, { quantity, quantityMode, salePriceOverride });
       if (!res.ok) showToast(res.message ?? 'Unable to add item', 'error');
       else {
         setQuery('');
         closeSaltModal();
         setPendingQty(null);
         inputRef.current?.focus();
+        if (
+          usePOSBillingStore.getState().posPricingChannel === 'wholesale' &&
+          res.lineId
+        ) {
+          window.requestAnimationFrame(() =>
+            document.getElementById(`line-price-${res.lineId}`)?.focus()
+          );
+        }
       }
     },
     [addMedicineToCart, showToast, closeSaltModal, medicines]
@@ -191,15 +210,32 @@ export const ProductSearch: React.FC = () => {
         showToast('No sellable quantity for this product.', 'error');
         return;
       }
-      const defaultMode = chooseInitialQuantityMode(med.id, previewQty, tpp);
-      const tabletUnitLabel = (med.unit ?? '').trim() || 'tablets';
+      const batch = pickDefaultBatch(med);
+      if (!batch) {
+        showToast('No sellable batch for this product.', 'error');
+        return;
+      }
+      const defaultMode: CartQuantityMode = canTablet ? 'tablet' : 'packet';
+      const packLbl = quantityPerPackFieldLabels({
+        isGeneral: isGeneralMedicineProfile(med),
+        unitType: effectiveMedicineUnitType(med),
+      });
+      const tabletUnitLabel = (med.unit ?? '').trim() || packLbl.looseStockPlural;
+      const suggestedSalePerTablet = Math.max(0.01, Math.round(batch.salePricePerTablet * 10000) / 10000);
+      const suggestedSalePerPack = Math.max(
+        0.01,
+        Math.round((tpp >= 2 ? batch.salePricePerPack : batch.salePricePerTablet) * 100) / 100
+      );
       setPendingQty({
         medicineId,
         medicineName: displayMedicineNameWithType(med),
         tabletUnitLabel,
+        looseModeLabel: posLooseSellShortLabel(med),
         canTablet,
         canPacket,
         defaultMode,
+        suggestedSalePerTablet,
+        suggestedSalePerPack,
         substitutionMeta,
       });
     },
@@ -294,14 +330,19 @@ export const ProductSearch: React.FC = () => {
         open={!!pendingQty}
         medicineName={pendingQty?.medicineName ?? ''}
         tabletUnitLabel={pendingQty?.tabletUnitLabel ?? 'tablets'}
+        looseModeLabel={pendingQty?.looseModeLabel ?? 'Tablet'}
+        packModeLabel="Pack"
+        wholesalePricingEnabled={posPricingChannel === 'wholesale'}
+        suggestedSalePerTablet={pendingQty?.suggestedSalePerTablet ?? 0}
+        suggestedSalePerPack={pendingQty?.suggestedSalePerPack ?? 0}
         canTablet={pendingQty?.canTablet ?? true}
         canPacket={pendingQty?.canPacket ?? false}
         defaultMode={pendingQty?.defaultMode ?? 'tablet'}
         onClose={() => setPendingQty(null)}
-        onConfirm={(q, mode) => {
+        onConfirm={(q, mode, saleOverride) => {
           const p = pendingQtyRef.current;
           if (!p) return;
-          performAdd(p.medicineId, q, mode, p.substitutionMeta);
+          performAdd(p.medicineId, q, mode, p.substitutionMeta, saleOverride);
         }}
       />
 

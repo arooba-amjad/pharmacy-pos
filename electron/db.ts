@@ -45,6 +45,8 @@ export function getDatabase(): Database.Database {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const db = new Database(filePath);
   db.pragma('journal_mode = WAL');
+  /** WAL + NORMAL is the usual desktop tradeoff; faster than FULL with acceptable durability for local POS. */
+  db.pragma('synchronous = NORMAL');
   db.pragma('foreign_keys = ON');
   if (CRASH_SAFE_MODE) {
     db.pragma('synchronous = FULL');
@@ -69,10 +71,25 @@ export function getDatabaseVersion(): number {
   return Number(row?.value ?? DB_VERSION);
 }
 
-export function checkDatabaseIntegrity(): { ok: boolean; integrity: string; foreignKeyViolations: unknown[] } {
+export type IntegrityCheckMode = 'quick' | 'full';
+
+function readIntegrityPragma(db: Database.Database, pragma: 'quick_check' | 'integrity_check'): string {
+  const rows = db.prepare(`PRAGMA ${pragma}`).all() as Record<string, unknown>[];
+  if (rows.length === 0) return 'empty';
+  const parts = rows.map((row) => String(Object.values(row)[0] ?? ''));
+  if (parts.length === 1 && parts[0].toLowerCase() === 'ok') return 'ok';
+  return parts.join('; ');
+}
+
+/** Startup uses `quick` by default (much faster on large DBs). Use `full` after restore or for deep audits. */
+export function checkDatabaseIntegrity(mode: IntegrityCheckMode = 'quick'): {
+  ok: boolean;
+  integrity: string;
+  foreignKeyViolations: unknown[];
+} {
   const db = getDatabase();
-  const integrityRow = db.prepare('PRAGMA integrity_check').get() as Record<string, string> | undefined;
-  const integrity = String(integrityRow?.integrity_check ?? Object.values(integrityRow ?? {})[0] ?? 'unknown');
+  const pragma = mode === 'quick' ? 'quick_check' : 'integrity_check';
+  const integrity = readIntegrityPragma(db, pragma);
   const foreignKeyViolations = db.prepare('PRAGMA foreign_key_check').all();
   const ok = integrity.toLowerCase() === 'ok' && foreignKeyViolations.length === 0;
   return { ok, integrity, foreignKeyViolations };

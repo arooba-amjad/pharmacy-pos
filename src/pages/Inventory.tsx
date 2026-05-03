@@ -33,6 +33,11 @@ import {
   type InventoryStatusFilter,
 } from '@/lib/inventoryAnalytics';
 import {
+  effectiveMedicineUnitType,
+  isGeneralMedicineProfile,
+  quantityPerPackFieldLabels,
+} from '@/lib/medicinePackLabels';
+import {
   costPerPackFromTablet,
   formatPacksPlusTablets,
   getMedicineTabletsPerPack,
@@ -245,6 +250,10 @@ export const Inventory: React.FC = () => {
     e.preventDefault();
     const med = adjustMedicine;
     if (!med) return;
+    const unitLabels = quantityPerPackFieldLabels({
+      isGeneral: isGeneralMedicineProfile(med),
+      unitType: effectiveMedicineUnitType(med),
+    });
     const tpp = getMedicineTabletsPerPack(med);
     const packs = Math.max(0, Math.floor(Number(newBatch.quantityPackets) || 0));
     const extraTablets = Math.max(0, Math.floor(Number(newBatch.quantityTablets) || 0));
@@ -273,7 +282,7 @@ export const Inventory: React.FC = () => {
       if (packs > 0) {
         adjustBatchStock(med.id, existing.id, tablets);
         showToast(
-          `Batch “${existing.batchNo}” updated and ${packs} pack${packs === 1 ? '' : 's'} + ${extraTablets} ${med.unit}${extraTablets === 1 ? '' : 's'} (${tablets} tablets total) added. Sale/purchase prices were applied to all batches and POS.`,
+          `Batch “${existing.batchNo}” updated and ${packs} pack${packs === 1 ? '' : 's'} + ${extraTablets} ${med.unit}${extraTablets === 1 ? '' : 's'} (${tablets} ${unitLabels.looseStockPlural} total) added. Sale/purchase prices were applied to all batches and POS.`,
           'success'
         );
       } else if (extraTablets > 0) {
@@ -290,8 +299,13 @@ export const Inventory: React.FC = () => {
       }
     } else {
       if (tablets <= 0) {
-        setAdjustInlineError('Enter quantity in packs and/or tablets (minimum 1 unit) for a new batch.');
-        showToast('Enter how many packs and/or tablets you are receiving for a new batch.', 'error');
+        setAdjustInlineError(
+          `Enter quantity in packs and/or loose ${unitLabels.looseStockPlural} (minimum 1 unit) for a new batch.`
+        );
+        showToast(
+          `Enter how many packs and/or loose ${unitLabels.looseStockPlural} you are receiving for a new batch.`,
+          'error'
+        );
         return;
       }
       addBatchToMedicine(med.id, {
@@ -346,6 +360,18 @@ export const Inventory: React.FC = () => {
       tpp,
     };
   }, [adjustMedicine, newBatch.quantityPackets, newBatch.quantityTablets, adjustBatchMatch]);
+
+  const adjustStockPackLabels = useMemo(() => {
+    if (!adjustMedicine) return null;
+    const tpp = getMedicineTabletsPerPack(adjustMedicine);
+    return {
+      tpp,
+      ...quantityPerPackFieldLabels({
+        isGeneral: isGeneralMedicineProfile(adjustMedicine),
+        unitType: effectiveMedicineUnitType(adjustMedicine),
+      }),
+    };
+  }, [adjustMedicine]);
 
   useEffect(() => {
     if (!adjustMedicine || !newBatch.batchNo.trim()) return;
@@ -1046,8 +1072,8 @@ export const Inventory: React.FC = () => {
                   <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/90 px-3 py-2.5 text-xs text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-100">
                     <strong className="font-black">Existing batch.</strong> This batch number is already on file. You can
                     change expiry and prices below — saving updates the <strong className="font-black">entire</strong> lot.
-                    Add packs if you are receiving stock; leave packs at 0 to only update expiry and prices. No duplicate
-                    lot is created.
+                    Add commercial packs if you are receiving stock; leave packs at 0 to only update expiry and prices.
+                    No duplicate lot is created.
                   </div>
                 )}
                 <form id="inventory-adjust-form" onSubmit={submitAdjustStock} className="grid grid-cols-2 gap-3">
@@ -1071,7 +1097,7 @@ export const Inventory: React.FC = () => {
                     />
                   </label>
                   <label className="text-xs font-bold text-slate-500 dark:text-zinc-400">
-                    Quantity (packs)
+                    Quantity (commercial packs)
                     <input
                       ref={adjustQtyRef}
                       type="number"
@@ -1085,7 +1111,7 @@ export const Inventory: React.FC = () => {
                     />
                   </label>
                   <label className="text-xs font-bold text-slate-500 dark:text-zinc-400">
-                    Quantity ({adjustMedicine.unit})
+                    Quantity (loose {adjustStockPackLabels!.looseStockPlural})
                     <input
                       type="number"
                       min={0}
@@ -1100,9 +1126,10 @@ export const Inventory: React.FC = () => {
                   <p className="col-span-2 text-[11px] leading-snug text-slate-500 dark:text-zinc-400">
                     Pack size:{' '}
                     <span className="font-bold text-slate-700 dark:text-zinc-200">
-                      {getMedicineTabletsPerPack(adjustMedicine)} tablets per pack
+                      {adjustStockPackLabels!.tpp} {adjustStockPackLabels!.perPackPhrase}
                     </span>
-                    . Stock is stored as tablets (packs x pack size + direct units).
+                    . Stock is stored in {adjustStockPackLabels!.looseStockPlural} (commercial packs × pack size + loose{' '}
+                    {adjustStockPackLabels!.looseStockPlural}).
                     {adjustBatchMatch ? (
                       <>
                         {' '}

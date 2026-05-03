@@ -34,15 +34,12 @@ function ShortcutRow({ keys, label }: { keys: React.ReactNode; label: string }) 
 export const POS: React.FC = () => {
   const voidCart = usePOSBillingStore((s) => s.voidCart);
   const openCheckoutFlow = usePOSBillingStore((s) => s.openCheckoutFlow);
-  const hydratePOSData = usePOSBillingStore((s) => s.hydratePOSData);
   const isSyncing = usePOSBillingStore((s) => s.isSyncing);
   const syncError = usePOSBillingStore((s) => s.syncError);
+  const posPricingChannel = usePOSBillingStore((s) => s.posPricingChannel);
+  const setPosPricingChannel = usePOSBillingStore((s) => s.setPosPricingChannel);
   const shortcutsEnabled = useSettingsStore((s) => s.keyboardShortcutsEnabled);
   const [guideOpen, setGuideOpen] = useState(false);
-
-  useEffect(() => {
-    void hydratePOSData();
-  }, [hydratePOSData]);
 
   useEffect(() => {
     if (!shortcutsEnabled) return;
@@ -130,11 +127,11 @@ export const POS: React.FC = () => {
         if (lk === 't') {
           if (line.quantityMode === 'tablet') return;
           const r = st.setLineQuantityMode(sel, 'tablet');
-          if (!r.ok) useToastStore.getState().show(r.message ?? 'Cannot switch to tablets.', 'error');
+          if (!r.ok) useToastStore.getState().show(r.message ?? 'Cannot switch to loose units.', 'error');
         } else {
           if (line.quantityMode === 'packet') return;
           const r = st.setLineQuantityMode(sel, 'packet');
-          if (!r.ok) useToastStore.getState().show(r.message ?? 'Cannot switch to packets.', 'error');
+          if (!r.ok) useToastStore.getState().show(r.message ?? 'Cannot switch to packs.', 'error');
         }
         return;
       }
@@ -175,7 +172,7 @@ export const POS: React.FC = () => {
   }, [guideOpen]);
 
   return (
-    <div className="relative h-full min-h-0 bg-background">
+    <div className="relative flex h-full min-h-0 flex-col bg-background">
       <ToastStack />
       <CheckoutFlowModal />
       <CustomerCreditAlertHost />
@@ -190,16 +187,52 @@ export const POS: React.FC = () => {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => setGuideOpen(true)}
-        className="absolute right-5 top-5 z-20 inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-md shadow-slate-900/[0.06] ring-1 ring-black/[0.03] backdrop-blur-md transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/95 dark:text-zinc-200 dark:shadow-none dark:ring-white/[0.06] dark:hover:bg-zinc-800"
-        aria-haspopup="dialog"
-        aria-expanded={guideOpen}
-      >
-        <Keyboard className="h-4 w-4 text-primary" strokeWidth={2} />
-        Shortcuts
-      </button>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-5 pb-2 pt-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sale type</span>
+          <div className="inline-flex rounded-xl border border-border/80 bg-muted/40 p-1 dark:border-border/60">
+            <button
+              type="button"
+              onClick={() => setPosPricingChannel('retail')}
+              className={cn(
+                'rounded-lg px-3 py-2 text-xs font-bold transition',
+                posPricingChannel === 'retail'
+                  ? 'bg-card text-foreground shadow-sm ring-1 ring-border/60'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Retail
+            </button>
+            <button
+              type="button"
+              onClick={() => setPosPricingChannel('wholesale')}
+              className={cn(
+                'rounded-lg px-3 py-2 text-xs font-bold transition',
+                posPricingChannel === 'wholesale'
+                  ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Wholesale / bulk
+            </button>
+          </div>
+          <p className="max-w-[280px] text-[10px] leading-snug text-muted-foreground">
+            {posPricingChannel === 'retail'
+              ? 'Shelf prices only — price column is read-only.'
+              : 'Optional price when adding a medicine; cart prices editable.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-md shadow-slate-900/[0.06] ring-1 ring-black/[0.03] backdrop-blur-md transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/95 dark:text-zinc-200 dark:shadow-none dark:ring-white/[0.06] dark:hover:bg-zinc-800"
+          aria-haspopup="dialog"
+          aria-expanded={guideOpen}
+        >
+          <Keyboard className="h-4 w-4 text-primary" strokeWidth={2} />
+          Shortcuts
+        </button>
+      </div>
 
       {guideOpen ? (
         <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="pos-shortcuts-title">
@@ -263,7 +296,7 @@ export const POS: React.FC = () => {
                     <Kbd>P</Kbd>
                   </span>
                 }
-                label="Selected line: loose tablets (T) or full packs (P) when pack size is set"
+                label="Selected line: loose units (T) or commercial packs (P) when pack size ≥ 2"
               />
               <ShortcutRow keys={<Kbd>Enter</Kbd>} label="Focus quantity for selected line" />
               <ShortcutRow
@@ -335,9 +368,7 @@ export const POS: React.FC = () => {
         </div>
       ) : null}
 
-      <div
-        className="h-full min-h-0 p-5 grid gap-5 [grid-template-columns:minmax(260px,3fr)_minmax(300px,4fr)_minmax(260px,3fr)]"
-      >
+      <div className="grid min-h-0 flex-1 gap-5 p-5 pt-2 [grid-template-columns:minmax(260px,3fr)_minmax(300px,4fr)_minmax(260px,3fr)]">
         <section className={panel} aria-label="Product search">
           <ProductSearch />
         </section>

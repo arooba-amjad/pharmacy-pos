@@ -1,7 +1,7 @@
 {
   "name": "pharmacy",
   "private": true,
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Pharmacy POS — desktop demo (inventory, sales, purchases, suppliers, settings).",
   "author": "Pharmacy",
   "main": "dist-electron/main.js",

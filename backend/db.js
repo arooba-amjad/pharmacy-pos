@@ -274,6 +274,7 @@ export function openDatabase() {
   closeDatabase();
   db = new Database(filePath);
   db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
   db.pragma('foreign_keys = ON');
   runMigrations(db);
   return db;

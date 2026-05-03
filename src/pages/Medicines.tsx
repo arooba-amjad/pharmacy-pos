@@ -13,6 +13,12 @@ import {
   getMasterSalePrice,
   getMasterSalePricePerPack,
 } from '@/lib/medicineMasterHelpers';
+import {
+  effectiveMedicineUnitType,
+  isGeneralMedicineProfile,
+  isGeneralMedicineSlug,
+  quantityPerPackFieldLabels,
+} from '@/lib/medicinePackLabels';
 import { getMedicineTabletsPerPack, tabletPurchaseFromPack, tabletSaleFromPack } from '@/lib/stockUnits';
 import { SupplierCombobox } from '@/components/medicines/SupplierCombobox';
 import { ManufacturerCombobox } from '@/components/medicines/ManufacturerCombobox';
@@ -123,10 +129,6 @@ function inferMedicineType(m: Pick<Medicine, 'type' | 'unit' | 'category'>): Med
   if (token.includes('drop')) return 'drops';
   if (token.includes('general')) return 'general';
   return 'tablet';
-}
-
-function isGeneralType(type: string): boolean {
-  return type.trim().toLowerCase() === 'general';
 }
 
 function typeLabelForDisplay(type: string, options: MedicineTypeOption[]): string {
@@ -351,6 +353,8 @@ export const Medicines: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string | 'all'>('all');
   const [viewId, setViewId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
+  /** Bumped whenever the add/edit sheet opens so AnimatePresence + exit overlays stack correctly. */
+  const [sheetPresenceKey, setSheetPresenceKey] = useState(0);
   const [medicineTypes, setMedicineTypes] = useState<MedicineTypeOption[]>(MEDICINE_TYPE_OPTIONS);
   const [typeModalOpen, setTypeModalOpen] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
@@ -362,12 +366,18 @@ export const Medicines: React.FC = () => {
     () => medicineTypes.find((t) => t.value === form.type) ?? TYPE_DEFAULTS[form.type] ?? TYPE_DEFAULTS.tablet,
     [medicineTypes, form.type]
   );
-  const isGeneralForm = isGeneralType(form.type);
+  const isGeneralForm = isGeneralMedicineSlug(form.type);
   const isTabletForm = selectedType.unitType === 'tablet';
   const isVolumeForm = selectedType.unitType === 'ml';
 
-  const derivedCatalogTabletPrices = useMemo(() => {
-    if (!isTabletForm) return null;
+  const quantityPerPackLabels = useMemo(
+    () => quantityPerPackFieldLabels({ isGeneral: isGeneralForm, unitType: form.unitType }),
+    [isGeneralForm, form.unitType]
+  );
+
+  /** Pack prices → per sellable unit (same math as tablets; units-per-pack comes from quantity-per-pack field). */
+  const derivedCatalogPerUnitPrices = useMemo(() => {
+    if (isGeneralForm) return null;
     const tpp = Math.max(1, Math.floor(Number(form.tabletsPerPack) || 0));
     const salePp = Number(form.salePerPack);
     const purchasePp = Number(form.purchasePerPack);
@@ -375,10 +385,10 @@ export const Medicines: React.FC = () => {
     const saleOk = Number.isFinite(salePp) && salePp > 0;
     const purOk = Number.isFinite(purchasePp) && purchasePp >= 0;
     return {
-      salePerTablet: saleOk ? tabletSaleFromPack(salePp, tpp) : null,
-      purchasePerTablet: purOk ? (purchasePp <= 0 ? 0 : tabletPurchaseFromPack(purchasePp, tpp)) : null,
+      salePerUnit: saleOk ? tabletSaleFromPack(salePp, tpp) : null,
+      purchasePerUnit: purOk ? (purchasePp <= 0 ? 0 : tabletPurchaseFromPack(purchasePp, tpp)) : null,
     };
-  }, [form.tabletsPerPack, form.salePerPack, form.purchasePerPack, isTabletForm]);
+  }, [form.tabletsPerPack, form.salePerPack, form.purchasePerPack, isGeneralForm]);
 
   const browseTypes = useMemo(() => {
     const set = new Set<string>();
@@ -429,6 +439,7 @@ export const Medicines: React.FC = () => {
   };
 
   const openAdd = () => {
+    setSheetPresenceKey((k) => k + 1);
     const defaults = medicineTypes[0] ?? TYPE_DEFAULTS.tablet;
     const seed = emptyForm(useSettingsStore.getState().lowStockThreshold);
     setForm({
@@ -445,6 +456,7 @@ export const Medicines: React.FC = () => {
   };
 
   const openEdit = (m: Medicine) => {
+    setSheetPresenceKey((k) => k + 1);
     const medType = normalizeMedicineType(inferMedicineType(m));
     const defaults = TYPE_DEFAULTS[medType] ?? TYPE_DEFAULTS.tablet;
     if (!medicineTypes.some((t) => t.value === medType)) {
@@ -505,7 +517,8 @@ export const Medicines: React.FC = () => {
     if (!isGeneralForm && !form.unitType) e.unit = 'Unit must be defined';
     const needsVolume = !isGeneralForm && selectedType.unitType === 'ml';
     const tpp = Math.floor(Number(form.tabletsPerPack));
-    if (!Number.isFinite(tpp) || tpp < 1) e.tabletsPerPack = 'Quantity per pack must be a whole number ≥ 1';
+    const qpErr = quantityPerPackFieldLabels({ isGeneral: isGeneralForm, unitType: form.unitType }).quantityError;
+    if (!Number.isFinite(tpp) || tpp < 1) e.tabletsPerPack = qpErr;
     const volume = Number(form.volume);
     if (needsVolume && (!Number.isFinite(volume) || volume <= 0)) e.volume = 'Enter valid volume in ml';
     const salePp = Number(form.salePerPack);
@@ -532,7 +545,7 @@ export const Medicines: React.FC = () => {
     if (!validate()) return;
     const normalizedType = normalizeMedicineType(form.type);
     const typeDefaults = medicineTypes.find((t) => t.value === normalizedType) ?? TYPE_DEFAULTS[normalizedType] ?? TYPE_DEFAULTS.tablet;
-    const isGeneral = isGeneralType(normalizedType);
+    const isGeneral = isGeneralMedicineSlug(normalizedType);
     const isTablet = !isGeneral && typeDefaults.unitType === 'tablet';
     const tpp = Math.max(1, Math.floor(Number(form.tabletsPerPack)));
     const salePp = Number(form.salePerPack);
@@ -774,6 +787,10 @@ export const Medicines: React.FC = () => {
                 const tpp = getMedicineTabletsPerPack(m);
                 const supName = m.supplierId ? suppliers.find((s) => s.id === m.supplierId)?.name : null;
                 const lowLine = getMedicineLowStockThresholdTablets(m);
+                const catalogPackLbl = quantityPerPackFieldLabels({
+                  isGeneral: isGeneralMedicineProfile(m),
+                  unitType: effectiveMedicineUnitType(m),
+                });
                 return (
                   <li
                     key={m.id}
@@ -805,7 +822,7 @@ export const Medicines: React.FC = () => {
                           ) : null}
                           <span className="text-slate-500 dark:text-zinc-500">
                             Low if ≤ <span className="font-bold tabular-nums text-slate-700 dark:text-zinc-300">{lowLine}</span>{' '}
-                            tablets
+                            {catalogPackLbl.looseStockPlural}
                           </span>
                         </div>
                       </div>
@@ -879,12 +896,17 @@ export const Medicines: React.FC = () => {
         {viewMed && (() => {
           const viewSup = viewMed.supplierId ? suppliers.find((s) => s.id === viewMed.supplierId) : null;
           const viewLow = getMedicineLowStockThresholdTablets(viewMed);
+          const viewPackLbl = quantityPerPackFieldLabels({
+            isGeneral: isGeneralMedicineProfile(viewMed),
+            unitType: effectiveMedicineUnitType(viewMed),
+          });
           return (
           <motion.div
+            key={viewMed.id}
             className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center sm:p-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, pointerEvents: 'none' }}
           >
             <motion.button
               type="button"
@@ -892,7 +914,7 @@ export const Medicines: React.FC = () => {
               className="absolute inset-0 bg-slate-900/50 backdrop-blur-[4px]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, pointerEvents: 'none' }}
               onClick={() => setViewId(null)}
             />
             <motion.div
@@ -951,17 +973,17 @@ export const Medicines: React.FC = () => {
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-600 dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-400">
                   <p className="font-bold text-slate-700 dark:text-zinc-300">System use (read-only)</p>
                   <p className="mt-1">
-                    Sale / tablet:{' '}
-                    {getMasterSalePrice(viewMed) != null ? formatCurrency(getMasterSalePrice(viewMed)!) : '—'} · Cost /
-                    tablet:{' '}
+                    Sale / {viewPackLbl.sellUnitSingular}:{' '}
+                    {getMasterSalePrice(viewMed) != null ? formatCurrency(getMasterSalePrice(viewMed)!) : '—'} · Cost /{' '}
+                    {viewPackLbl.sellUnitSingular}:{' '}
                     {getMasterPurchasePrice(viewMed) != null ? formatCurrency(getMasterPurchasePrice(viewMed)!) : '—'}
                   </p>
                 </div>
                 <dl className="space-y-2 rounded-2xl border border-slate-100 p-3 text-sm dark:border-zinc-800">
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500 dark:text-zinc-500">Pack size (tablets / pack)</dt>
+                    <dt className="text-slate-500 dark:text-zinc-500">Pack size</dt>
                     <dd className="text-right font-semibold text-slate-900 dark:text-white">
-                      {getMedicineTabletsPerPack(viewMed)}
+                      {getMedicineTabletsPerPack(viewMed)} {viewPackLbl.perPackPhrase}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4">
@@ -979,7 +1001,9 @@ export const Medicines: React.FC = () => {
                     <dd className="text-right font-semibold text-slate-900 dark:text-white">{viewSup?.name ?? '—'}</dd>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500 dark:text-zinc-500">Low stock line (tablets)</dt>
+                    <dt className="text-slate-500 dark:text-zinc-500">
+                      Low stock line ({viewPackLbl.looseStockPlural})
+                    </dt>
                     <dd className="text-right font-semibold text-slate-900 dark:text-white">
                       ≤ {viewLow}
                       {viewMed.lowStockThreshold != null ? (
@@ -1024,10 +1048,11 @@ export const Medicines: React.FC = () => {
       <AnimatePresence>
         {sheet && (
           <motion.div
+            key={sheetPresenceKey}
             className="fixed inset-0 z-[70] flex items-end justify-center p-4 sm:items-center sm:p-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, pointerEvents: 'none' }}
           >
             <motion.button
               type="button"
@@ -1035,7 +1060,7 @@ export const Medicines: React.FC = () => {
               className="absolute inset-0 bg-slate-900/50 backdrop-blur-[4px]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, pointerEvents: 'none' }}
               onClick={() => setSheet(null)}
             />
             <motion.div
@@ -1099,7 +1124,7 @@ export const Medicines: React.FC = () => {
               ) : null}
               <FloatField
                 id="mf-low"
-                label={isTabletForm ? 'Low stock alert level (tablets) *' : 'Low stock alert level (units) *'}
+                label={`Low stock alert level (${quantityPerPackLabels.looseStockPlural}) *`}
                 value={form.lowStockThreshold}
                 onChange={(v) => setForm((f) => ({ ...f, lowStockThreshold: v }))}
                 type="number"
@@ -1143,7 +1168,6 @@ export const Medicines: React.FC = () => {
                       type: next.value,
                       unitType: next.unitType,
                       unit: next.unit,
-                      tabletsPerPack: next.tabletsPerPack,
                       volume: next.volume,
                       packLabel: next.packLabel,
                     }));
@@ -1177,7 +1201,7 @@ export const Medicines: React.FC = () => {
               <div className="space-y-1">
                 <FloatField
                   id="mf-tpp"
-                  label="Quantity per pack *"
+                  label={quantityPerPackLabels.label}
                   value={form.tabletsPerPack}
                   onChange={(v) => setForm((f) => ({ ...f, tabletsPerPack: v }))}
                   type="number"
@@ -1186,9 +1210,7 @@ export const Medicines: React.FC = () => {
                   step="1"
                   error={errors.tabletsPerPack}
                 />
-                <p className="text-xs text-slate-500 dark:text-zinc-500">
-                  Number of units in one pack for this medicine type.
-                </p>
+                <p className="text-xs text-slate-500 dark:text-zinc-500">{quantityPerPackLabels.helper}</p>
               </div>
               {!isGeneralForm && isVolumeForm ? (
                 <FloatField
@@ -1205,17 +1227,7 @@ export const Medicines: React.FC = () => {
               ) : null}
               <FloatField
                 id="mf-purchase-pack"
-                label={
-                  isGeneralForm
-                    ? 'Purchase price *'
-                    : selectedType.unitType === 'tablet'
-                    ? 'Purchase price per pack *'
-                    : selectedType.unitType === 'ml'
-                      ? 'Purchase price per bottle *'
-                      : selectedType.unitType === 'vial'
-                        ? 'Purchase price per unit *'
-                        : 'Purchase price per tube *'
-                }
+                label={isGeneralForm ? 'Purchase price *' : 'Purchase price per pack *'}
                 value={form.purchasePerPack}
                 onChange={(v) => setForm((f) => ({ ...f, purchasePerPack: v }))}
                 type="number"
@@ -1226,17 +1238,7 @@ export const Medicines: React.FC = () => {
               />
               <FloatField
                 id="mf-sale-pack"
-                label={
-                  isGeneralForm
-                    ? 'Sale price *'
-                    : selectedType.unitType === 'tablet'
-                    ? 'Sale price per pack *'
-                    : selectedType.unitType === 'ml'
-                      ? 'Sale price per bottle *'
-                      : selectedType.unitType === 'vial'
-                        ? 'Sale price per unit *'
-                        : 'Sale price per tube *'
-                }
+                label={isGeneralForm ? 'Sale price *' : 'Sale price per pack *'}
                 value={form.salePerPack}
                 onChange={(v) => setForm((f) => ({ ...f, salePerPack: v }))}
                 type="number"
@@ -1246,22 +1248,24 @@ export const Medicines: React.FC = () => {
                 error={errors.salePerPack}
               />
               {!isGeneralForm &&
-              (derivedCatalogTabletPrices?.salePerTablet != null ||
-              derivedCatalogTabletPrices?.purchasePerTablet != null ? (
+              (derivedCatalogPerUnitPrices?.salePerUnit != null ||
+              derivedCatalogPerUnitPrices?.purchasePerUnit != null ? (
                 <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/[0.04] p-3 text-xs text-slate-700 dark:text-zinc-300">
                   <p className="font-bold text-primary">Calculated for stock &amp; POS</p>
                   <p className="mt-1.5 tabular-nums">
-                    Purchase / tablet:{' '}
-                    {derivedCatalogTabletPrices?.purchasePerTablet != null
-                      ? formatCurrency(derivedCatalogTabletPrices.purchasePerTablet)
+                    Purchase / {quantityPerPackLabels.sellUnitSingular}:{' '}
+                    {derivedCatalogPerUnitPrices?.purchasePerUnit != null
+                      ? formatCurrency(derivedCatalogPerUnitPrices.purchasePerUnit)
                       : '—'}
                     <span className="mx-2 text-slate-400">·</span>
-                    Sale / tablet:{' '}
-                    {derivedCatalogTabletPrices?.salePerTablet != null
-                      ? formatCurrency(derivedCatalogTabletPrices.salePerTablet)
+                    Sale / {quantityPerPackLabels.sellUnitSingular}:{' '}
+                    {derivedCatalogPerUnitPrices?.salePerUnit != null
+                      ? formatCurrency(derivedCatalogPerUnitPrices.salePerUnit)
                       : '—'}
                   </p>
-                  <p className="mt-1 text-slate-500 dark:text-zinc-500">You never type these — they stay in sync with pack size and pack prices.</p>
+                  <p className="mt-1 text-slate-500 dark:text-zinc-500">
+                    Enter prices per pack only — per-{quantityPerPackLabels.sellUnitSingular} amounts follow pack size automatically.
+                  </p>
                 </div>
               ) : null)}
               <p className="text-xs leading-relaxed text-slate-500 dark:text-zinc-500">
@@ -1270,9 +1274,11 @@ export const Medicines: React.FC = () => {
                   : null}
                 {!isGeneralForm ? (
                   <>
+                    Purchase and sale are priced per commercial pack; per-{quantityPerPackLabels.sellUnitSingular} values are
+                    derived from pack size like tablets.{' '}
                 {isTabletForm
-                  ? 'Tablet stock is derived as packets × pack size.'
-                  : 'Non-tablet stock is stored directly in entered units (bottle/tube/vial).'}{' '}
+                  ? 'Tablet stock counts as packs × pack size plus loose tablets.'
+                  : 'Stock is tracked in individual sellable units (bottle/tube/vial/etc.).'}{' '}
                 Lots and receiving live in <span className="font-semibold text-slate-700 dark:text-zinc-300">Inventory</span>.
                   </>
                 ) : null}
@@ -1304,12 +1310,15 @@ export const Medicines: React.FC = () => {
             className="fixed inset-0 z-[75] flex items-end justify-center p-4 sm:items-center sm:p-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, pointerEvents: 'none' }}
           >
             <motion.button
               type="button"
               aria-label="Close"
               className="absolute inset-0 bg-slate-900/50 backdrop-blur-[4px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, pointerEvents: 'none' }}
               onClick={() => setTypeModalOpen(false)}
             />
             <motion.div

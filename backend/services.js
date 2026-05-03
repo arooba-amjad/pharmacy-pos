@@ -195,17 +195,35 @@ export function receivePurchase(purchaseId) {
   })();
 }
 
+/**
+ * Record a retail or wholesale sale; allocates stock FEFO and persists line totals.
+ *
+ * Payload (camelCase; Express POST body or Electron IPC after validation):
+ * - customerName, paymentMethod, discount, tax, pricingChannel?: 'retail'|'wholesale'
+ * - creditAmount?, counterPayment?, customerId?
+ * - items[]: medicineId, quantityMode ('tablet'|'packet'), quantity (sell units),
+ *   stockTablets? (canonical shelf units for the line — required alignment with POS),
+ *   unitPrice? (negotiated price per sell unit matching quantityMode)
+ */
 export function createSale(payload) {
   if (!Array.isArray(payload.items) || payload.items.length === 0) throw new Error('Sale items are required.');
 
   return db.transaction(() => {
     const saleId = generateId('sal');
     let subtotal = 0;
+    const pricingChannel =
+      String(payload.pricingChannel ?? '').toLowerCase() === 'wholesale' ? 'wholesale' : 'retail';
 
     db.prepare(
-      `INSERT INTO sales (id, customer_name, payment_method, subtotal, discount, tax, total, created_at)
-       VALUES (?, ?, ?, 0, 0, 0, 0, ?)`
-    ).run(saleId, String(payload.customerName ?? ''), String(payload.paymentMethod ?? 'cash'), nowIso());
+      `INSERT INTO sales (id, customer_name, payment_method, pricing_channel, subtotal, discount, tax, total, created_at)
+       VALUES (?, ?, ?, ?, 0, 0, 0, 0, ?)`
+    ).run(
+      saleId,
+      String(payload.customerName ?? ''),
+      String(payload.paymentMethod ?? 'cash'),
+      pricingChannel,
+      nowIso()
+    );
 
     for (const line of payload.items) {
       const med = db
@@ -214,8 +232,10 @@ export function createSale(payload) {
       if (!med) throw new Error(`Medicine not found: ${line.medicineId}`);
 
       const mode = line.quantityMode === 'packet' ? 'packet' : 'tablet';
-      const quantityUnits = ensurePositiveInt(line.quantity, 'quantity');
+      const sellQty = ensurePositiveInt(line.quantity, 'quantity');
       const tpp = Math.max(1, Number(med.tablets_per_pack) || 1);
+      const stockTabletsPayloadRaw =
+        line.stockTablets != null ? Number(line.stockTablets) : Number(line.stock_tablets);
 
       const batches = db
         .prepare(
@@ -231,7 +251,7 @@ export function createSale(payload) {
       // - packet mode: allocate full packs only (never break packs across tables)
       const allocations = [];
       if (mode === 'packet') {
-        let remainingPacks = quantityUnits;
+        let remainingPacks = sellQty;
         for (const batch of batches) {
           if (remainingPacks <= 0) break;
           const batchTablets = Number(batch.quantity_tablets) || 0;
@@ -249,7 +269,11 @@ export function createSale(payload) {
           throw new Error(`Insufficient full-pack stock for ${med.id}.`);
         }
       } else {
-        let remainingTablets = quantityUnits;
+        const tabletsToSell =
+          Number.isFinite(stockTabletsPayloadRaw) && stockTabletsPayloadRaw >= 1
+            ? ensurePositiveInt(stockTabletsPayloadRaw, 'stockTablets')
+            : sellQty;
+        let remainingTablets = tabletsToSell;
         for (const batch of batches) {
           if (remainingTablets <= 0) break;
           const takeTablets = Math.min(remainingTablets, Number(batch.quantity_tablets) || 0);
@@ -266,16 +290,40 @@ export function createSale(payload) {
         }
       }
 
-      for (const alloc of allocations) {
+      const overrideRaw =
+        line.unitPrice != null ? Number(line.unitPrice) : Number(line.unit_price);
+      const overrideUnitPrice =
+        Number.isFinite(overrideRaw) && overrideRaw >= 0.01 ? Math.round(overrideRaw * 100) / 100 : null;
+      const revenueTarget =
+        overrideUnitPrice != null ? Math.round(overrideUnitPrice * sellQty * 100) / 100 : null;
+      const totalStockTaken = allocations.reduce((sum, a) => sum + a.takeTablets, 0);
+
+      let allocatedCustomRev = 0;
+      for (let ai = 0; ai < allocations.length; ai++) {
+        const alloc = allocations[ai];
         db.prepare('UPDATE batches SET quantity_tablets = quantity_tablets - ? WHERE id = ?').run(
           alloc.takeTablets,
           alloc.batch.id
         );
-        const unitPrice =
+        const shelfUnitPrice =
           mode === 'packet'
             ? Number(alloc.batch.sale_price_per_pack || med.sale_per_pack || 0)
             : Number(alloc.batch.sale_price_per_tablet || 0);
-        const lineTotal = unitPrice * alloc.quantityUnits;
+
+        let unitPrice;
+        let lineTotal;
+        if (revenueTarget != null && totalStockTaken > 0) {
+          const isLast = ai === allocations.length - 1;
+          lineTotal = isLast
+            ? Math.round((revenueTarget - allocatedCustomRev) * 100) / 100
+            : Math.round(((revenueTarget * alloc.takeTablets) / totalStockTaken) * 100) / 100;
+          allocatedCustomRev += lineTotal;
+          unitPrice =
+            alloc.quantityUnits > 0 ? Math.round((lineTotal / alloc.quantityUnits) * 100) / 100 : shelfUnitPrice;
+        } else {
+          unitPrice = shelfUnitPrice;
+          lineTotal = Math.round(unitPrice * alloc.quantityUnits * 100) / 100;
+        }
         subtotal += lineTotal;
 
         db.prepare(

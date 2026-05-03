@@ -1,25 +1,36 @@
-import React, { useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { applyThemeToDocument } from '@/lib/themeStorage';
 import { TitleBar } from '@/components/TitleBar';
 import { Sidebar } from '@/components/Sidebar';
 import { POS } from '@/pages/POS';
-import { Inventory } from '@/pages/Inventory';
-import { Medicines } from '@/pages/Medicines';
-import { Dashboard } from '@/pages/Dashboard';
-import { Reports } from '@/pages/Reports';
-import { SalesHistory } from '@/pages/SalesHistory';
-import { Returns } from '@/pages/Returns';
-import { Customers } from '@/pages/Customers';
-import { Purchases } from '@/pages/Purchases';
-import { Suppliers } from '@/pages/Suppliers';
-import { Settings } from '@/pages/Settings';
 import { AuthGate } from '@/components/AuthGate';
 import { useAuthStore } from '@/store/useAuthStore';
 import { usePOSBillingStore } from '@/store/usePOSBillingStore';
 import { cn } from '@/lib/utils';
+
+const Inventory = lazy(() => import('@/pages/Inventory').then((m) => ({ default: m.Inventory })));
+const Medicines = lazy(() => import('@/pages/Medicines').then((m) => ({ default: m.Medicines })));
+const Dashboard = lazy(() => import('@/pages/Dashboard').then((m) => ({ default: m.Dashboard })));
+const Reports = lazy(() => import('@/pages/Reports').then((m) => ({ default: m.Reports })));
+const SalesHistory = lazy(() => import('@/pages/SalesHistory').then((m) => ({ default: m.SalesHistory })));
+const Returns = lazy(() => import('@/pages/Returns').then((m) => ({ default: m.Returns })));
+const Customers = lazy(() => import('@/pages/Customers').then((m) => ({ default: m.Customers })));
+const Purchases = lazy(() => import('@/pages/Purchases').then((m) => ({ default: m.Purchases })));
+const Suppliers = lazy(() => import('@/pages/Suppliers').then((m) => ({ default: m.Suppliers })));
+const Settings = lazy(() => import('@/pages/Settings').then((m) => ({ default: m.Settings })));
+
+function LazyScreenFallback() {
+  return (
+    <div className="flex h-full min-h-[280px] flex-col items-center justify-center gap-2 text-muted-foreground">
+      <Loader2 className="h-7 w-7 animate-spin opacity-60" strokeWidth={1.25} aria-hidden />
+      <span className="text-xs font-medium">Loading…</span>
+    </div>
+  );
+}
 
 function applyPrimaryTheme(hex: string) {
   const root = document.documentElement;
@@ -75,9 +86,8 @@ export const PosAppNavigator: React.FC = () => {
 
   useEffect(() => {
     if (!isAccessGranted) return;
-    void hydrateReferenceData();
     void (async () => {
-      await hydratePOSData();
+      await Promise.all([hydrateReferenceData(), hydratePOSData()]);
       await hydrateBusinessData();
     })();
   }, [isAccessGranted, hydrateReferenceData, hydratePOSData, hydrateBusinessData]);
@@ -120,35 +130,37 @@ export const PosAppNavigator: React.FC = () => {
               key={currentScreen}
               initial={false}
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
-              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-              className="flex-1 overflow-hidden h-full"
+              exit={{ opacity: 0, scale: 1.01, filter: 'blur(3px)' }}
+              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              className="flex h-full flex-1 overflow-hidden"
             >
-              {currentScreen === 'POS' ? (
-                <POS />
-              ) : currentScreen === 'Inventory' ? (
-                <Inventory />
-              ) : currentScreen === 'Medicines' ? (
-                <Medicines />
-              ) : currentScreen === 'Sales' ? (
-                <SalesHistory />
-              ) : currentScreen === 'Returns' ? (
-                <Returns />
-              ) : currentScreen === 'Customers' ? (
-                <Customers />
-              ) : currentScreen === 'Dashboard' ? (
-                <Dashboard />
-              ) : currentScreen === 'Reports' ? (
-                <Reports />
-              ) : currentScreen === 'Purchases' ? (
-                <Purchases />
-              ) : currentScreen === 'Suppliers' ? (
-                <Suppliers />
-              ) : currentScreen === 'Settings' ? (
-                <Settings />
-              ) : (
-                <PlaceholderScreen name={currentScreen} />
-              )}
+              <Suspense fallback={<LazyScreenFallback />}>
+                {currentScreen === 'POS' ? (
+                  <POS />
+                ) : currentScreen === 'Inventory' ? (
+                  <Inventory />
+                ) : currentScreen === 'Medicines' ? (
+                  <Medicines />
+                ) : currentScreen === 'Sales' ? (
+                  <SalesHistory />
+                ) : currentScreen === 'Returns' ? (
+                  <Returns />
+                ) : currentScreen === 'Customers' ? (
+                  <Customers />
+                ) : currentScreen === 'Dashboard' ? (
+                  <Dashboard />
+                ) : currentScreen === 'Reports' ? (
+                  <Reports />
+                ) : currentScreen === 'Purchases' ? (
+                  <Purchases />
+                ) : currentScreen === 'Suppliers' ? (
+                  <Suppliers />
+                ) : currentScreen === 'Settings' ? (
+                  <Settings />
+                ) : (
+                  <PlaceholderScreen name={currentScreen} />
+                )}
+              </Suspense>
             </motion.div>
           </AnimatePresence>
         </main>

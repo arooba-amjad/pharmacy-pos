@@ -148,7 +148,17 @@ export const SalesHistory: React.FC = () => {
                   className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-slate-900 dark:text-white">{s.invoiceNo}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-900 dark:text-white">{s.invoiceNo}</p>
+                      {s.pricingChannel === 'wholesale' ? (
+                        <span
+                          className="rounded-full bg-teal-600/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-900 dark:bg-teal-500/20 dark:text-teal-100"
+                          title="Checkout was in wholesale / bulk pricing mode"
+                        >
+                          Bulk sale
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="text-sm text-slate-600 dark:text-zinc-400">
                       {s.customer?.name ?? 'Walk-in'}{' '}
                       {s.customer?.phone ? (
@@ -228,6 +238,13 @@ export const SalesHistory: React.FC = () => {
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Receipt</p>
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">{RECEIPT_BRANDING.name}</h2>
                 <p className="text-xs text-slate-500 dark:text-zinc-400">{receiptSale.invoiceNo}</p>
+                {receiptSale.pricingChannel === 'wholesale' ? (
+                  <p className="mt-1">
+                    <span className="rounded-full bg-teal-600/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-teal-900 dark:bg-teal-500/20 dark:text-teal-100">
+                      Bulk sale
+                    </span>
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"

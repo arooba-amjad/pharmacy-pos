@@ -110,7 +110,7 @@ function findBatch(med: Medicine, batchId: string) {
 }
 
 /** Earliest valid expiry first (FEFO). */
-function pickDefaultBatch(med: Medicine): MedicineBatch | null {
+export function pickDefaultBatch(med: Medicine): MedicineBatch | null {
   const allowNeg = useSettingsStore.getState().allowNegativeStock;
   const sellable = med.batches
     .filter((b) => !isExpired(b.expiryDate) && (b.totalTablets > 0 || allowNeg))
@@ -121,6 +121,8 @@ function pickDefaultBatch(med: Medicine): MedicineBatch | null {
 export interface AddMedicineResult {
   ok: boolean;
   message?: string;
+  /** Set when add/merge succeeds — for focusing cart price in wholesale mode. */
+  lineId?: string;
 }
 
 export interface QuickMedicinePayload {
@@ -179,6 +181,9 @@ export interface POSBillingState {
   returns: ReturnRecord[];
   cart: CartLine[];
   selectedLineId: string | null;
+  /** Retail locks shelf prices on cart lines; wholesale/bulk allows editing sale prices. */
+  posPricingChannel: 'retail' | 'wholesale';
+  setPosPricingChannel: (channel: 'retail' | 'wholesale') => void;
   customer: Customer | null;
   discount: number;
   discountType: 'percentage' | 'fixed';
@@ -217,7 +222,7 @@ export interface POSBillingState {
   removeMedicine: (medicineId: string) => void;
   addMedicineToCart: (
     medicineId: string,
-    opts?: { quantity?: number; quantityMode?: CartQuantityMode }
+    opts?: { quantity?: number; quantityMode?: CartQuantityMode; salePriceOverride?: number }
   ) => AddMedicineResult;
   removeLine: (lineId: string) => void;
   setSelectedLine: (lineId: string | null) => void;
@@ -321,6 +326,9 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
   returns: [],
   cart: [],
   selectedLineId: null,
+  posPricingChannel: 'retail',
+  setPosPricingChannel: (channel) => set({ posPricingChannel: channel }),
+
   customer: null,
   discount: 0,
   discountType: 'fixed',
@@ -769,9 +777,8 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
     const batchId = `b-${id}-def`;
     const normalizedType = payload.type;
     const normalizedUnitType = payload.unitType;
-    // Any tablet-based unit type (tablet/capsule-style) should honor entered pack size.
-    const isTablet = normalizedUnitType === 'tablet';
-    const tpp = isTablet ? Math.max(1, Math.floor(Number(payload.tabletsPerPack) || 0)) : 1;
+    /** Units per commercial pack for all forms — drives per-unit price derivation from pack prices. */
+    const tpp = Math.max(1, Math.floor(Number(payload.tabletsPerPack) || 0));
     const unitFallback =
       normalizedUnitType === 'tablet'
         ? 'Tablet'
@@ -1173,7 +1180,7 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
     if (opts?.quantityMode === 'packet' || opts?.quantityMode === 'tablet') {
       if (opts.quantityMode === 'packet') {
         if (!packetModeAvailable(stockTablets, tabletsPerPack)) {
-          return { ok: false, message: 'Full packs are not available for this product right now.' };
+          return { ok: false, message: 'Commercial packs are not available for this product right now.' };
         }
         quantityMode = 'packet';
       } else {
@@ -1202,13 +1209,19 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
       const upd = recomputed.find((l) => l.lineId === existing.lineId);
       if (upd?.allocationError) return { ok: false, message: upd.allocationError };
       set({ cart: recomputed, lastAddPulse: Date.now(), selectedLineId: existing.lineId });
-      return { ok: true };
+      return { ok: true, lineId: existing.lineId };
     }
 
-    const unitPrice =
+    let unitPrice =
       quantityMode === 'packet'
         ? Math.round(batch.salePricePerPack * 100) / 100
         : Math.round(batch.salePricePerTablet * 100) / 100;
+    const override = opts?.salePriceOverride;
+    let pricingMode: 'fefo' | 'custom' = 'fefo';
+    if (override != null && Number.isFinite(override)) {
+      unitPrice = Math.max(0.01, Math.round(override * 100) / 100);
+      pricingMode = 'custom';
+    }
     const costPrice =
       quantityMode === 'packet'
         ? Math.round(costPerPackFromTablet(batch.costPricePerTablet, tabletsPerPack) * 100) / 100
@@ -1230,7 +1243,7 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
       costPrice,
       batchSlices: [],
       preferredBatchId: null,
-      pricingMode: 'fefo',
+      pricingMode,
     };
     const tentative = recomputeCartAllocations(medicines, [...cart, line]);
     const added = tentative.find((l) => l.lineId === line.lineId);
@@ -1238,7 +1251,7 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
 
     rememberQuantityMode(med.id, quantityMode);
     set({ cart: tentative, selectedLineId: line.lineId, lastAddPulse: Date.now() });
-    return { ok: true };
+    return { ok: true, lineId: line.lineId };
   },
 
   removeLine: (lineId) => {
@@ -1305,6 +1318,7 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
   },
 
   setLineUnitPrice: (lineId, price) => {
+    if (get().posPricingChannel === 'retail') return;
     set((s) => {
       const reconciled = recomputeCartAllocations(s.medicines, s.cart);
       const line = reconciled.find((l) => l.lineId === lineId);
@@ -1332,7 +1346,7 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
     if (mode === 'packet' && tpp < 2) {
       return {
         ok: false,
-        message: 'Add a numeric pack size on the medicine master to sell in packets.',
+        message: 'Add a numeric pack size on the medicine master to sell in packs.',
       };
     }
 
@@ -1442,6 +1456,7 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
     const sale: Sale = {
       id: `S-${Date.now()}`,
       invoiceNo,
+      pricingChannel: snap.posPricingChannel,
       customer,
       items: enrichCartLinesForSaleLedger(snap.medicines, cart.map((l) => ({ ...l }))),
       subtotal,
@@ -1483,6 +1498,7 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
         ...(normalizedCustomerId ? { customerId: normalizedCustomerId } : {}),
         customerName: customer?.name ?? '',
         paymentMethod: finalPaymentMethod,
+        pricingChannel: snap.posPricingChannel,
         ...(creditAmountPosted != null ? { creditAmount: creditAmountPosted } : {}),
         ...(counterPaid != null ? { counterPayment: counterPaid } : {}),
         discount: discountAmt,
@@ -1491,6 +1507,8 @@ export const usePOSBillingStore = create<POSBillingState>((set, get) => ({
           medicineId: line.medicineId,
           quantityMode: line.quantityMode,
           quantity: line.quantity,
+          stockTablets: lineTotalTablets(line),
+          ...(line.pricingMode === 'custom' ? { unitPrice: line.unitPrice } : {}),
         })),
       });
     } catch (error) {

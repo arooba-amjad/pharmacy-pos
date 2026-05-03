@@ -12,6 +12,10 @@ import { registerAuthHandlers } from './ipc/authHandlers';
 import { syncMedicinesMirror } from './medicinesMirrorDb';
 import { exportLogs, logger } from './logger';
 import { registerDomainHandlers } from './ipc/handlers';
+
+/** Must run before `backend/db.js` loads so `resolveDbFilePath()` uses the live userData DB. */
+process.env.PHARMACY_USER_DATA_DIR = app.getPath('userData');
+
 const require = createRequire(import.meta.url);
 const { db, generateId, nowIso } = require('../backend/db.js') as {
   db: any;
@@ -44,7 +48,6 @@ const mainDirname = path.dirname(mainFilename);
 
 process.env.DIST = path.join(mainDirname, '../dist');
 process.env.VITE_PUBLIC = app.isPackaged ? process.env.DIST : path.join(process.env.DIST, '../public');
-process.env.PHARMACY_USER_DATA_DIR = app.getPath('userData');
 
 let win: BrowserWindow | null = null;
 
@@ -85,6 +88,7 @@ function sendAutoUpdate(payload: { phase: string; message?: string }) {
 
 function createWindow() {
   win = new BrowserWindow({
+    show: false,
     icon: path.join(process.env.VITE_PUBLIC ?? '', 'electron-vite.svg'),
     width: 1280,
     height: 800,
@@ -98,6 +102,14 @@ function createWindow() {
     },
   });
 
+  win.once('ready-to-show', () => {
+    win?.show();
+  });
+  /** Fallback if `ready-to-show` never fires (rare load failures). */
+  win.webContents.once('did-finish-load', () => {
+    if (win && !win.isDestroyed() && !win.isVisible()) win.show();
+  });
+
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
   if (devServerUrl) void win.loadURL(devServerUrl);
   else if (!app.isPackaged) void win.loadURL('http://127.0.0.1:5173/');
@@ -105,10 +117,9 @@ function createWindow() {
 }
 
 function setupAutoUpdater() {
-  sendAutoUpdate({ phase: 'checking', message: 'Checking for updates...' });
   autoUpdater.autoDownload = true;
   autoUpdater.on('checking-for-update', () =>
-    sendAutoUpdate({ phase: 'checking', message: 'Checking for updates...' })
+    sendAutoUpdate({ phase: 'checking', message: 'Checking for updates…' })
   );
   autoUpdater.on('update-not-available', () =>
     sendAutoUpdate({ phase: 'not-available', message: 'You are on the latest version.' })
@@ -138,7 +149,13 @@ function setupAutoUpdater() {
     logger.error('Auto updater error', { message: err.message });
     sendAutoUpdate({ phase: 'error', message: err.message });
   });
-  if (app.isPackaged) void autoUpdater.checkForUpdates().catch((err) => logger.warn('Update check failed', err));
+  if (app.isPackaged) {
+    /** Defer so startup disk/CPU work (hydration, backups) finishes first. */
+    setTimeout(() => {
+      sendAutoUpdate({ phase: 'checking', message: 'Checking for updates…' });
+      void autoUpdater.checkForUpdates().catch((err) => logger.warn('Update check failed', err));
+    }, 12_000);
+  }
 }
 
 function registerIpcHandlers() {
@@ -184,6 +201,29 @@ function registerIpcHandlers() {
   ipcMain.handle('app:diagnostics', () => ({ dbPath: getDbPath(), dbVersion: getDatabaseVersion(), backups: listBackups() }));
 }
 
+/** Heavy I/O after the window is visible — avoids blocking first paint. */
+function scheduleDeferredStartupMaintenance(): void {
+  const delayMs = 600;
+  setTimeout(() => {
+    try {
+      backupOnStartup();
+    } catch (error) {
+      logger.warn('Deferred startup backup failed', { error: String(error) });
+    }
+    try {
+      runDailyBackup();
+    } catch (error) {
+      logger.warn('Deferred daily backup failed', { error: String(error) });
+    }
+    try {
+      syncMedicinesMirror(db);
+    } catch (error) {
+      logger.warn('Deferred medicines mirror sync failed', { error: String(error) });
+    }
+    logger.info('Deferred startup maintenance finished');
+  }, delayMs);
+}
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
@@ -202,7 +242,7 @@ app.on('will-quit', () => closeDatabase());
 app.whenReady().then(() => {
   try {
     getDatabase();
-    const integrity = checkDatabaseIntegrity();
+    const integrity = checkDatabaseIntegrity('quick');
     if (!integrity.ok) {
       logger.error('Database integrity check failed', integrity);
       const latest = getLatestBackupFileName();
@@ -221,7 +261,7 @@ app.whenReady().then(() => {
         return;
       }
       restoreBackup(latest);
-      const recheck = checkDatabaseIntegrity();
+      const recheck = checkDatabaseIntegrity('full');
       if (!recheck.ok) {
         logger.error('Database integrity still failing after restore', recheck);
         dialog.showErrorBox(
@@ -232,9 +272,6 @@ app.whenReady().then(() => {
         return;
       }
     }
-    backupOnStartup();
-    runDailyBackup();
-    syncMedicinesMirror(db);
     logger.info('Application started', { dbPath: getDbPath() });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -263,5 +300,6 @@ app.whenReady().then(() => {
   }
   registerIpcHandlers();
   createWindow();
+  scheduleDeferredStartupMaintenance();
   setupAutoUpdater();
 });

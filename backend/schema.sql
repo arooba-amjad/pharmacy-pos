@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS sales (
   id TEXT PRIMARY KEY,
   customer_name TEXT NOT NULL DEFAULT '',
   payment_method TEXT NOT NULL DEFAULT 'cash',
+  pricing_channel TEXT NOT NULL DEFAULT 'retail',
   subtotal REAL NOT NULL DEFAULT 0,
   discount REAL NOT NULL DEFAULT 0,
   tax REAL NOT NULL DEFAULT 0,

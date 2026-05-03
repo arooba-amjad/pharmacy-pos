@@ -84,6 +84,7 @@ type SaleApiRow = {
   customer_phone?: string;
   customerPhone?: string;
   payment_method: 'cash' | 'card' | 'credit';
+  pricing_channel?: string;
   subtotal: number;
   discount: number;
   tax?: number;
@@ -210,9 +211,12 @@ function mapSaleRow(row: SaleApiRow, medicines: Medicine[]): Sale {
       pricingMode: 'fefo' as const,
     };
   });
+  const wholesale = String(row.pricing_channel ?? '').toLowerCase() === 'wholesale';
+
   return {
     id: row.id,
     invoiceNo: `INV-${row.id.slice(-8).toUpperCase()}`,
+    ...(wholesale ? { pricingChannel: 'wholesale' as const } : {}),
     customer,
     items,
     subtotal: Number(row.subtotal) || 0,

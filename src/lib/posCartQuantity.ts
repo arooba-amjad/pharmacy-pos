@@ -72,16 +72,15 @@ export function canEnablePacketToggle(line: Pick<CartLine, 'tabletsPerPack'>): b
   return line.tabletsPerPack >= 2;
 }
 
+/** Prefer loose units whenever stock allows — matches POS quantity popup default. */
 export function chooseInitialQuantityMode(
-  medicineId: string,
+  _medicineId: string,
   batchStock: number,
   tabletsPerPack: number
 ): CartQuantityMode {
-  const remembered = getRememberedQuantityMode(medicineId);
   const canPacket = packetModeAvailable(batchStock, tabletsPerPack);
   const canTablet = tabletModeAvailable(batchStock);
-  if (remembered === 'tablet' && canTablet) return 'tablet';
-  if (remembered === 'packet' && canPacket) return 'packet';
+  if (canTablet) return 'tablet';
   if (canPacket) return 'packet';
   return 'tablet';
 }
@@ -94,11 +93,11 @@ function pluralBaseUnit(unit: string, qty: number): string {
   return `${u}s`;
 }
 
-/** e.g. "2 Packets" / "15 Tablets" */
+/** e.g. "2 Packs" / "15 Tablets" */
 export function formatSellQuantityLabel(line: Pick<CartLine, 'quantity' | 'quantityMode' | 'unit'>): string {
   const n = line.quantity;
   if (line.quantityMode === 'packet') {
-    return `${n} ${n === 1 ? 'Packet' : 'Packets'}`;
+    return `${n} ${n === 1 ? 'Pack' : 'Packs'}`;
   }
   const u = pluralBaseUnit(line.unit ?? 'tablet', n);
   return `${n} ${u.charAt(0).toUpperCase()}${u.slice(1)}`;

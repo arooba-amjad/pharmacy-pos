@@ -127,7 +127,7 @@ export function SupplierCombobox({
         onKeyDown={onKeyDown}
         placeholder=""
         className={cn(
-          'w-full rounded-xl border border-slate-200 bg-white px-3 pb-2.5 pt-5 text-sm text-slate-900 outline-none transition-shadow focus:border-slate-300 focus:ring-2 focus:ring-slate-200/80 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white',
+          'no-drag w-full rounded-xl border border-slate-200 bg-white px-3 pb-2.5 pt-5 text-sm text-slate-900 outline-none transition-shadow focus:border-slate-300 focus:ring-2 focus:ring-slate-200/80 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white',
           error && 'border-red-400 focus:border-red-400 focus:ring-red-100'
         )}
       />
