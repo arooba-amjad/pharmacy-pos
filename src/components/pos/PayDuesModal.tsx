@@ -71,7 +71,7 @@ export function PayDuesModal({ open, previousBalance, currentBill, onClose, onCo
   return createPortal(
     <div
       data-pay-dues-modal="true"
-      className="fixed inset-0 z-[170] flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]"
+      className="modal-overlay fixed inset-0 z-[170] flex justify-center bg-black/45 backdrop-blur-[2px]"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();

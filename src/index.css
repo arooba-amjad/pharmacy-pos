@@ -300,3 +300,98 @@
   max-width: calc(100vw - 1.5rem);
   max-height: calc(100dvh - 1.5rem);
 }
+
+/* ---------------------------------------------------------------------------
+ * Mobile / touch utilities (below 768px)
+ *
+ * Tablets and small touch screens (down to 360px) are first-class citizens.
+ * These helpers tighten gutters, enlarge tap targets, and let modals act as
+ * bottom sheets when the viewport can't host a centered dialog comfortably.
+ * ------------------------------------------------------------------------- */
+
+/* Touch-friendly tap target — minimum 44x44 (Apple/Google guidance).
+   Apply to icon-only buttons that would otherwise be too small to tap. */
+.tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Sheet-style modal: anchors the dialog to the bottom of the screen on
+   narrow viewports and rounds only the top corners, mimicking native
+   iOS / Android sheets. Falls back to a centered modal on >=sm. */
+.modal-sheet {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(92dvh, 720px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+@media (min-width: 640px) {
+  .modal-sheet {
+    width: min(100%, 640px);
+    max-width: min(calc(100vw - 1.5rem), 640px);
+    border-bottom-left-radius: inherit;
+    border-bottom-right-radius: inherit;
+  }
+}
+
+/* Backdrop alignment for sheet vs centered modal */
+.modal-overlay {
+  align-items: flex-end;
+  padding: 0;
+}
+@media (min-width: 640px) {
+  .modal-overlay {
+    align-items: center;
+    padding: clamp(0.75rem, 2vw, 2rem);
+  }
+}
+
+/* On phones, any modal panel (immediate non-absolute child of .modal-overlay)
+   becomes a bottom-anchored sheet: full width, flat bottom corners. The
+   `*` selector skips the backdrop button which is positioned absolute. */
+@media (max-width: 639px) {
+  .modal-overlay > [role="dialog"],
+  .modal-overlay > .relative {
+    width: 100%;
+    max-width: 100% !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    margin-inline: 0;
+  }
+}
+
+/* Tightens any container's horizontal padding on phone widths so 360px
+   still has comfortable inner content spacing. */
+.mobile-pad {
+  padding-inline: 0.75rem;
+}
+@media (min-width: 640px) {
+  .mobile-pad {
+    padding-inline: 1rem;
+  }
+}
+@media (min-width: 768px) {
+  .mobile-pad {
+    padding-inline: 1.25rem;
+  }
+}
+
+/* Prevents accidental horizontal page scroll caused by overflowing
+   absolute children on very narrow viewports. */
+@media (max-width: 480px) {
+  html, body, #root {
+    overflow-x: hidden;
+  }
+}
+
+/* Use larger fonts on form inputs at phone widths so iOS/Android
+   keyboards don't trigger zoom-on-focus. */
+@media (max-width: 640px) {
+  input, select, textarea {
+    font-size: max(16px, 0.875rem);
+  }
+}

@@ -619,7 +619,7 @@ export const CheckoutFlowModal: React.FC = () => {
       ) : null}
       {open && (
         <motion.div
-          className="fixed inset-0 z-[140] flex items-center justify-center p-3 sm:p-6 md:p-8"
+          className="modal-overlay fixed inset-0 z-[140] flex justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -646,8 +646,9 @@ export const CheckoutFlowModal: React.FC = () => {
                   : 'checkout-flow-title-receipt'
             }
             className={cn(
-              'relative z-10 w-full overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-2xl dark:border-border/60 dark:bg-card',
-              'max-w-[min(calc(100vw-1.5rem),32rem)] max-h-[min(92dvh,720px)] flex flex-col'
+              'modal-sheet relative z-10 overflow-hidden border border-slate-200/90 bg-white shadow-2xl dark:border-border/60 dark:bg-card',
+              // Sheet on phones (rounded top corners only); rounded card from sm up
+              'rounded-t-[24px] sm:rounded-[24px]'
             )}
             ref={modalPanelRef}
             onKeyDown={(e) => {

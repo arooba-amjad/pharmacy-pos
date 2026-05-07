@@ -64,7 +64,7 @@ export function CustomerCreditDetailsModal({ open, customer, sales, onClose }: C
   return createPortal(
     <div
       data-credit-details-modal="true"
-      className="fixed inset-0 z-[165] flex items-center justify-center p-4 sm:p-6"
+      className="modal-overlay fixed inset-0 z-[165] flex justify-center"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();

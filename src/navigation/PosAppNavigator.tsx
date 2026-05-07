@@ -132,7 +132,7 @@ export const PosAppNavigator: React.FC = () => {
     >
       <TitleBar />
       {updateMessage ? (
-        <div className="mx-5 mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-medium text-foreground">
+        <div className="mx-3 mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-medium text-foreground sm:mx-5">
           {updateMessage}
         </div>
       ) : null}

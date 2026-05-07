@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Minus, Square, X, Pill, LogOut } from 'lucide-react';
+import { Minus, Square, X, Pill, LogOut, Menu } from 'lucide-react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAppStore } from '@/store/useAppStore';
 
 export const TitleBar: React.FC = () => {
   const logout = useAuthStore((s) => s.logout);
+  const openMobileSidebar = useAppStore((s) => s.openMobileSidebar);
   const [now, setNow] = useState(() => new Date());
   const handleMinimize = () => (window as any).electronAPI?.minimize();
   const handleMaximize = () => (window as any).electronAPI?.maximize();
@@ -17,6 +19,15 @@ export const TitleBar: React.FC = () => {
   return (
     <div className="titlebar z-50 flex shrink-0 items-center justify-between gap-2">
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        {/* Mobile hamburger — visible only when the sidebar is hidden as a drawer */}
+        <button
+          type="button"
+          onClick={openMobileSidebar}
+          className="no-drag flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/90 hover:text-foreground md:hidden"
+          aria-label="Open navigation"
+        >
+          <Menu className="h-5 w-5" strokeWidth={2} />
+        </button>
         <div className="shrink-0 rounded-xl bg-gradient-to-br from-primary/30 via-primary/15 to-teal-400/20 p-2 shadow-sm ring-1 ring-primary/20">
           <Pill className="h-4 w-4 text-primary" strokeWidth={2.25} />
         </div>

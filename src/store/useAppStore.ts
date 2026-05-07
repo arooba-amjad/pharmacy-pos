@@ -6,10 +6,13 @@ interface AppState {
   currentScreen: AppScreen;
   isSidebarCollapsed: boolean;
   isSidebarForcedCollapsed: boolean;
+  isMobileSidebarOpen: boolean;
   isDarkMode: boolean;
   setCurrentScreen: (screen: AppScreen) => void;
   toggleSidebar: () => void;
   setSidebarForcedCollapsed: (forced: boolean) => void;
+  openMobileSidebar: () => void;
+  closeMobileSidebar: () => void;
   toggleDarkMode: () => void;
 }
 
@@ -17,8 +20,11 @@ export const useAppStore = create<AppState>((set) => ({
   currentScreen: 'POS',
   isSidebarCollapsed: false,
   isSidebarForcedCollapsed: false,
+  isMobileSidebarOpen: false,
   isDarkMode: false,
-  setCurrentScreen: (screen) => set({ currentScreen: screen }),
+  // Selecting a screen also closes any open mobile drawer so the user lands
+  // on the new page directly without an extra dismiss tap.
+  setCurrentScreen: (screen) => set({ currentScreen: screen, isMobileSidebarOpen: false }),
   toggleSidebar: () =>
     set((state) => {
       // When a narrow viewport forces collapse, the toggle still works — it just
@@ -40,6 +46,8 @@ export const useAppStore = create<AppState>((set) => ({
       }
       return { isSidebarForcedCollapsed: false };
     }),
+  openMobileSidebar: () => set({ isMobileSidebarOpen: true }),
+  closeMobileSidebar: () => set({ isMobileSidebarOpen: false }),
   toggleDarkMode: () =>
     set(() => {
       writeStoredTheme(false);

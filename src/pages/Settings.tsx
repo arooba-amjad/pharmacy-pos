@@ -30,7 +30,7 @@ const NAV: { id: SettingsCategory; label: string; icon: React.ElementType }[] = 
 
 function PanelCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-[18px] border border-slate-200/80 bg-white/90 p-5 shadow-[0_8px_30px_-18px_rgba(15,23,42,0.18)] dark:border-zinc-800/90 dark:bg-zinc-900/70 dark:shadow-black/30">
+    <div className="rounded-[18px] border border-slate-200/80 bg-white/90 p-4 shadow-[0_8px_30px_-18px_rgba(15,23,42,0.18)] dark:border-zinc-800/90 dark:bg-zinc-900/70 dark:shadow-black/30 sm:p-5">
       <h3 className="text-sm font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h3>
       {subtitle ? <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">{subtitle}</p> : null}
       <div className="mt-4 space-y-4">{children}</div>

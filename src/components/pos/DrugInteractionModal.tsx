@@ -38,7 +38,7 @@ export function DrugInteractionModal({ open, hits, onCancel, onContinue }: DrugI
 
   const node = (
     <div
-      className="fixed inset-0 z-[220] flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]"
+      className="modal-overlay fixed inset-0 z-[220] flex justify-center bg-black/50 backdrop-blur-[2px]"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onCancel();

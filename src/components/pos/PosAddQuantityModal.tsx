@@ -134,7 +134,7 @@ export function PosAddQuantityModal({
   return createPortal(
     <div
       data-pos-add-qty-modal="true"
-      className="fixed inset-0 z-[125] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
+      className="modal-overlay fixed inset-0 z-[125] flex justify-center bg-black/40 backdrop-blur-[2px]"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
