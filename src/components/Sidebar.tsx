@@ -55,7 +55,9 @@ export const Sidebar: React.FC = () => {
     <div
       className={cn(
         'no-drag flex h-full shrink-0 flex-col border-r border-border/40 bg-gradient-to-b from-card via-card to-muted/[0.12] shadow-[8px_0_48px_-28px_rgba(15,23,42,0.2)] backdrop-blur-xl transition-[width] duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] dark:border-border/25 dark:from-card/55 dark:via-card/45 dark:to-card/25 dark:shadow-[8px_0_48px_-28px_rgba(0,0,0,0.55)]',
-        isSidebarCollapsed ? 'w-[76px]' : 'w-[272px]'
+        isSidebarCollapsed
+          ? 'w-[64px] sm:w-[68px] xl:w-[72px]'
+          : 'w-[180px] md:w-[200px] lg:w-[220px] xl:w-[244px] 2xl:w-[268px]'
       )}
     >
       {/* Brand */}

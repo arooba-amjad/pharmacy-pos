@@ -75,20 +75,23 @@ export const Cart: React.FC = () => {
       data-cart-root
       className="flex flex-col h-full min-h-0 bg-transparent overflow-hidden"
     >
-      <div className="px-5 py-4 border-b border-slate-200/90 dark:border-border/40 flex justify-between items-center shrink-0 bg-white/70 dark:bg-transparent backdrop-blur-sm">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="bg-primary/12 p-2 rounded-[14px] ring-1 ring-primary/10 shadow-sm">
+      <div className="px-3 py-3 sm:px-5 sm:py-4 border-b border-slate-200/90 dark:border-border/40 flex justify-between items-center gap-2 shrink-0 bg-white/70 dark:bg-transparent backdrop-blur-sm">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="bg-primary/12 p-2 rounded-[14px] ring-1 ring-primary/10 shadow-sm shrink-0">
             <ShoppingBag className="text-primary w-5 h-5" strokeWidth={2.25} />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg font-bold tracking-tight leading-tight">Active cart</h2>
-            <p className="text-[11px] text-muted-foreground font-medium">
+            <h2 className="text-base sm:text-lg font-bold tracking-tight leading-tight truncate">Active cart</h2>
+            <p className="hidden lg:block text-[11px] text-muted-foreground font-medium truncate">
               Tab qty → next line · ↑↓ lines · <span className="font-mono">T</span> loose ·{' '}
               <span className="font-mono">P</span> pack · * / − qty · Enter · Del
             </p>
+            <p className="lg:hidden text-[10px] text-muted-foreground font-medium truncate">
+              <span className="font-mono">T</span>/<span className="font-mono">P</span> mode · ↑↓ lines · *− qty
+            </p>
           </div>
         </div>
-        <div className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full tabular-nums shrink-0">
+        <div className="text-[11px] sm:text-xs font-bold text-primary bg-primary/10 px-2 py-1 sm:px-2.5 rounded-full tabular-nums shrink-0">
           {cart.length} {cart.length === 1 ? 'line' : 'lines'}
         </div>
       </div>

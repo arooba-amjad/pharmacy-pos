@@ -267,13 +267,13 @@ export const Dashboard: React.FC = () => {
   const hasAttention = outCount > 0 || lowCount > 0 || expiringPreview.length > 0;
 
   return (
-    <div className="custom-scrollbar flex h-full min-h-0 flex-col overflow-y-auto">
-      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-8 px-5 py-6 md:px-8 md:py-8">
-        <header className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
-            <h1 className="text-3xl font-black tracking-tight md:text-4xl">Dashboard</h1>
-            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+    <div className="custom-scrollbar flex h-full min-h-0 w-full min-w-0 flex-col overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-[min(100%,1920px)] flex-col gap-6 px-3 py-4 sm:gap-7 sm:px-5 sm:py-6 md:px-6 md:py-7 lg:px-8 lg:py-8 xl:gap-8">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+          <div className="space-y-1.5 sm:space-y-2">
+            <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-primary">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>
+            <h1 className="fluid-h1 font-black tracking-tight">Dashboard</h1>
+            <p className="max-w-xl text-xs sm:text-sm leading-relaxed text-muted-foreground">
               Snapshot for today and the last two weeks. Use{' '}
               <button type="button" onClick={() => setCurrentScreen('Reports')} className="font-semibold text-foreground underline-offset-2 hover:underline">
                 Reports
@@ -354,7 +354,7 @@ export const Dashboard: React.FC = () => {
             <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Key metrics · today</h2>
             <span className="text-xs text-muted-foreground">vs yesterday where shown</span>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6">
             <KpiCard
               featured
               label="Today sales"
@@ -397,7 +397,7 @@ export const Dashboard: React.FC = () => {
 
         <section className="space-y-3">
           <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Trends · last 14 days</h2>
-          <div className="grid shrink-0 grid-cols-1 gap-5 lg:grid-cols-2">
+          <div className="grid shrink-0 grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-5">
             <div className="flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm ring-1 ring-black/[0.02] dark:border-border/50 dark:bg-card/45 dark:ring-white/[0.04]">
               <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
                 <h3 className="flex items-center gap-2 text-base font-bold">
@@ -462,7 +462,7 @@ export const Dashboard: React.FC = () => {
 
         <section className="space-y-3">
           <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Shelf & ledger</h2>
-          <div className="grid shrink-0 grid-cols-1 gap-5 pb-2 lg:grid-cols-2">
+          <div className="grid shrink-0 grid-cols-1 gap-4 pb-2 xl:grid-cols-2 xl:gap-5">
             <div className="flex flex-col rounded-2xl border border-border/70 bg-card p-5 shadow-sm ring-1 ring-black/[0.02] dark:border-border/50 dark:bg-card/45 dark:ring-white/[0.04]">
               <div className="mb-4 flex items-center justify-between gap-2">
                 <h3 className="flex items-center gap-2 text-base font-bold">

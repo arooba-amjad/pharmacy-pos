@@ -71,7 +71,7 @@ export const Checkout: React.FC = () => {
   return (
     <div
       data-no-pos-nav
-      className="flex flex-col h-full min-h-0 gap-3 p-4 overflow-y-auto custom-scrollbar bg-transparent"
+      className="flex flex-col h-full min-h-0 gap-3 p-3 sm:p-4 overflow-y-auto custom-scrollbar bg-transparent"
     >
       <div className="rounded-[20px] border border-slate-200/90 bg-white/90 p-4 shadow-sm dark:border-border/50 dark:bg-card/30 shrink-0">
         <p className="text-sm font-semibold text-foreground">Ready to close the sale?</p>

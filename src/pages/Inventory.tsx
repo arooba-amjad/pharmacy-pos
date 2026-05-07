@@ -430,20 +430,20 @@ export const Inventory: React.FC = () => {
   }, [activeMedicineId, adjustMedicineId, editOpen, filtered, openAdjustMedicine, viewMedicineId]);
 
   return (
-    <div className={cn('h-full min-h-0 flex flex-col gap-6 p-4 sm:p-6', PAGE_BG)}>
-      <header className="shrink-0 max-w-7xl mx-auto w-full">
+    <div className={cn('h-full min-h-0 w-full min-w-0 flex flex-col gap-4 sm:gap-5 lg:gap-6 p-3 sm:p-4 md:p-5 lg:p-6 overflow-y-auto', PAGE_BG)}>
+      <header className="shrink-0 max-w-[min(100%,1920px)] mx-auto w-full">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-zinc-50">
+          <h1 className="fluid-h1 font-black tracking-tight text-slate-900 dark:text-zinc-50">
             Inventory
           </h1>
-          <p className="text-sm text-slate-600 dark:text-zinc-400 max-w-xl mt-1 leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 max-w-xl mt-1 leading-relaxed">
             Smart stock overview — restock and expiry signals at a glance. Live totals sync with POS.
           </p>
         </div>
       </header>
 
       {/* Summary cards */}
-      <section className="grid grid-cols-2 xl:grid-cols-5 gap-3 sm:gap-4 shrink-0 max-w-7xl mx-auto w-full">
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 lg:gap-4 shrink-0 max-w-[min(100%,1920px)] mx-auto w-full">
         <motion.button
           type="button"
           layout
@@ -538,7 +538,7 @@ export const Inventory: React.FC = () => {
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.99 }}
           onClick={() => applySummaryCard('value')}
-          className="col-span-2 xl:col-span-1 text-left rounded-[20px] bg-white dark:bg-zinc-900/80 p-4 sm:p-5 shadow-sm ring-1 ring-slate-200/80 dark:ring-zinc-800 transition-shadow hover:shadow-md"
+          className="col-span-2 sm:col-span-3 lg:col-span-1 text-left rounded-[20px] bg-white dark:bg-zinc-900/80 p-4 sm:p-5 shadow-sm ring-1 ring-slate-200/80 dark:ring-zinc-800 transition-shadow hover:shadow-md"
         >
           <div className="flex items-start justify-between gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
@@ -553,7 +553,7 @@ export const Inventory: React.FC = () => {
       </section>
 
       {/* Search + filters */}
-      <section className="max-w-7xl mx-auto w-full rounded-[22px] bg-white dark:bg-zinc-900/70 p-4 sm:p-5 shadow-sm ring-1 ring-slate-200/80 dark:ring-zinc-800 space-y-4 shrink-0">
+      <section className="max-w-[min(100%,1920px)] mx-auto w-full rounded-[22px] bg-white dark:bg-zinc-900/70 p-3 sm:p-4 lg:p-5 shadow-sm ring-1 ring-slate-200/80 dark:ring-zinc-800 space-y-3 sm:space-y-4 shrink-0">
         <div className="relative">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
           <input
@@ -653,7 +653,7 @@ export const Inventory: React.FC = () => {
       </section>
 
       {/* Main list */}
-      <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto pr-1 pb-2 max-w-7xl mx-auto w-full">
+      <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto pr-1 pb-2 max-w-[min(100%,1920px)] mx-auto w-full">
         <AnimatePresence mode="popLayout" initial={false}>
           {filtered.length === 0 ? (
             <motion.div

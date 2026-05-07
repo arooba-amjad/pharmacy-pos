@@ -676,13 +676,13 @@ export const Medicines: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#F8FAFC] dark:bg-zinc-950">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col bg-[#F8FAFC] dark:bg-zinc-950">
       <header className="shrink-0 border-b border-slate-200/80 bg-white/90 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mx-auto flex w-full max-w-[min(100%,1920px)] flex-col gap-3 px-3 py-4 sm:gap-4 sm:px-5 sm:py-5 md:px-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">Medicines</h1>
-              <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-zinc-400">
+              <h1 className="fluid-h1 font-black tracking-tight text-slate-900 dark:text-white">Medicines</h1>
+              <p className="mt-1 max-w-xl text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-zinc-400">
                 Master catalog and default pricing for POS. Shelf quantities, batches, and expiry are managed in{' '}
                 <span className="font-semibold text-slate-800 dark:text-zinc-200">Inventory</span>.
               </p>
@@ -725,9 +725,9 @@ export const Medicines: React.FC = () => {
         </div>
       </header>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col lg:flex-row">
+      <div className="mx-auto flex min-h-0 w-full max-w-[min(100%,1920px)] flex-1 flex-col lg:flex-row">
         {/* Desktop sidebar */}
-        <aside className="hidden w-56 shrink-0 border-r border-slate-200/70 bg-white/70 p-4 dark:border-zinc-800/80 dark:bg-zinc-950/50 lg:block">
+        <aside className="hidden w-48 xl:w-56 shrink-0 border-r border-slate-200/70 bg-white/70 p-3 lg:p-4 dark:border-zinc-800/80 dark:bg-zinc-950/50 lg:block">
           <p className="mb-3 px-1 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500">Browse</p>
           <TypeNav
             options={browseTypes}
@@ -769,7 +769,7 @@ export const Medicines: React.FC = () => {
         </div>
 
         {/* List */}
-        <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
           {filtered.length === 0 ? (
             <div className="rounded-[22px] border border-dashed border-slate-200 bg-white/90 py-16 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
               <Search className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-zinc-600" strokeWidth={1.25} />

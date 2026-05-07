@@ -179,11 +179,11 @@ export const Customers: React.FC = () => {
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 bg-slate-50/90 p-4 sm:p-6 dark:bg-zinc-950">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-3 sm:gap-4 bg-slate-50/90 p-3 sm:p-4 md:p-5 lg:p-6 dark:bg-zinc-950">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Customers</h1>
-          <p className="text-sm text-slate-600 dark:text-zinc-400">Profiles, balances, and recent activity.</p>
+          <h1 className="fluid-h1 font-bold tracking-tight text-slate-900 dark:text-white">Customers</h1>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">Profiles, balances, and recent activity.</p>
         </div>
         <button
           type="button"
@@ -195,7 +195,7 @@ export const Customers: React.FC = () => {
         </button>
       </header>
 
-      <div className="relative max-w-xl">
+      <div className="relative w-full min-w-0">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="search"
@@ -233,7 +233,7 @@ export const Customers: React.FC = () => {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {filtered.map((c) => {
             const tone = balanceDot(c);
             const n = purchaseCount(c.id);

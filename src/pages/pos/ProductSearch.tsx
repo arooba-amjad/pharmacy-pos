@@ -318,7 +318,7 @@ export const ProductSearch: React.FC = () => {
   const noMatches = results.length === 0 && query.trim().length > 0;
 
   return (
-    <div className="flex flex-col h-full min-h-0 p-4 bg-transparent">
+    <div className="flex flex-col h-full min-h-0 p-3 sm:p-4 bg-transparent">
       <DrugInteractionModal
         open={interactionOpen}
         hits={pendingCartAdd?.hits ?? []}
@@ -359,8 +359,8 @@ export const ProductSearch: React.FC = () => {
         onPickMedicine={handlePickFromSaltModal}
       />
 
-      <div className="relative mb-4 group no-drag shrink-0">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
+      <div className="relative mb-3 sm:mb-4 group no-drag shrink-0">
+        <Search className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 sm:w-5 sm:h-5 group-focus-within:text-primary transition-colors pointer-events-none z-10" />
         <input
           id="pos-search-input"
           ref={inputRef}
@@ -371,7 +371,7 @@ export const ProductSearch: React.FC = () => {
               : 'Scan barcode or search medicine…'
           }
           className={cn(
-            'w-full rounded-[20px] border border-slate-200/90 bg-white py-4 pl-12 pr-12 text-base text-foreground shadow-sm',
+            'w-full rounded-[18px] sm:rounded-[20px] border border-slate-200/90 bg-white py-3 sm:py-4 pl-10 sm:pl-12 pr-10 sm:pr-12 text-sm sm:text-base text-foreground shadow-sm',
             'placeholder:text-muted-foreground/80',
             'transition-[box-shadow,border-color,transform] duration-200',
             'focus:border-primary/50 focus:outline-none focus:ring-0',

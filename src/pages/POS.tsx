@@ -176,26 +176,34 @@ export const POS: React.FC = () => {
       <ToastStack />
       <CheckoutFlowModal />
       <CustomerCreditAlertHost />
-      {isSyncing ? (
-        <div className="pointer-events-none absolute left-1/2 top-4 z-30 -translate-x-1/2 rounded-xl border border-primary/30 bg-background/95 px-3 py-1.5 text-xs font-semibold text-primary shadow">
-          Syncing stock from local API...
-        </div>
-      ) : null}
-      {syncError ? (
-        <div className="pointer-events-none absolute left-1/2 top-14 z-30 -translate-x-1/2 rounded-xl border border-red-500/30 bg-background/95 px-3 py-1.5 text-xs font-semibold text-red-600 shadow">
-          {syncError}
+
+      {/* Sync/error notice — flow element so it never overlaps the cart header. */}
+      {(isSyncing || syncError) ? (
+        <div className="flex shrink-0 flex-col gap-1 px-3 pt-2 sm:px-4 xl:px-5">
+          {isSyncing ? (
+            <div className="self-start rounded-xl border border-primary/30 bg-background/95 px-3 py-1.5 text-[11px] font-semibold text-primary shadow-sm">
+              Syncing stock from local API...
+            </div>
+          ) : null}
+          {syncError ? (
+            <div className="self-start max-w-full truncate rounded-xl border border-red-500/30 bg-background/95 px-3 py-1.5 text-[11px] font-semibold text-red-600 shadow-sm">
+              {syncError}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-5 pb-2 pt-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Sale type</span>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-3 pb-2 pt-3 sm:gap-3 sm:px-4 sm:pt-4 xl:px-5">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:gap-3">
+          <span className="hidden text-[10px] font-bold uppercase tracking-wide text-muted-foreground sm:inline">
+            Sale type
+          </span>
           <div className="inline-flex rounded-xl border border-border/80 bg-muted/40 p-1 dark:border-border/60">
             <button
               type="button"
               onClick={() => setPosPricingChannel('retail')}
               className={cn(
-                'rounded-lg px-3 py-2 text-xs font-bold transition',
+                'rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition sm:px-3 sm:py-2 sm:text-xs',
                 posPricingChannel === 'retail'
                   ? 'bg-card text-foreground shadow-sm ring-1 ring-border/60'
                   : 'text-muted-foreground hover:text-foreground'
@@ -207,16 +215,17 @@ export const POS: React.FC = () => {
               type="button"
               onClick={() => setPosPricingChannel('wholesale')}
               className={cn(
-                'rounded-lg px-3 py-2 text-xs font-bold transition',
+                'rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition sm:px-3 sm:py-2 sm:text-xs',
                 posPricingChannel === 'wholesale'
                   ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              Wholesale / bulk
+              <span className="sm:hidden">Wholesale</span>
+              <span className="hidden sm:inline">Wholesale / bulk</span>
             </button>
           </div>
-          <p className="max-w-[280px] text-[10px] leading-snug text-muted-foreground">
+          <p className="hidden max-w-full basis-full text-[10px] leading-snug text-muted-foreground md:block md:basis-auto md:max-w-xs xl:max-w-sm">
             {posPricingChannel === 'retail'
               ? 'Shelf prices only — price column is read-only.'
               : 'Optional price when adding a medicine; cart prices editable.'}
@@ -225,19 +234,20 @@ export const POS: React.FC = () => {
         <button
           type="button"
           onClick={() => setGuideOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-md shadow-slate-900/[0.06] ring-1 ring-black/[0.03] backdrop-blur-md transition hover:bg-white dark:border-zinc-700 dark:bg-zinc-900/95 dark:text-zinc-200 dark:shadow-none dark:ring-white/[0.06] dark:hover:bg-zinc-800"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/95 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 shadow-md shadow-slate-900/[0.06] ring-1 ring-black/[0.03] backdrop-blur-md transition hover:bg-white sm:gap-2 sm:px-3 sm:py-2 sm:text-xs dark:border-zinc-700 dark:bg-zinc-900/95 dark:text-zinc-200 dark:shadow-none dark:ring-white/[0.06] dark:hover:bg-zinc-800"
           aria-haspopup="dialog"
           aria-expanded={guideOpen}
+          title="Keyboard shortcuts"
         >
-          <Keyboard className="h-4 w-4 text-primary" strokeWidth={2} />
-          Shortcuts
+          <Keyboard className="h-3.5 w-3.5 text-primary sm:h-4 sm:w-4" strokeWidth={2} />
+          <span className="hidden sm:inline">Shortcuts</span>
         </button>
       </div>
 
       {guideOpen ? (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="pos-shortcuts-title">
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-3 sm:p-4 md:p-6" role="dialog" aria-modal="true" aria-labelledby="pos-shortcuts-title">
           <button type="button" className="absolute inset-0 bg-slate-900/40 backdrop-blur-[4px]" onClick={() => setGuideOpen(false)} aria-label="Close shortcuts" />
-          <div className="relative z-10 flex max-h-[min(90vh,640px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl shadow-slate-900/15 ring-1 ring-black/[0.04] dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-black/40 dark:ring-white/[0.06]">
+          <div className="relative z-10 flex max-h-[min(90dvh,640px)] w-full max-w-[min(calc(100vw-1.5rem),32rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl shadow-slate-900/15 ring-1 ring-black/[0.04] dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-black/40 dark:ring-white/[0.06]">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-zinc-800">
               <div>
                 <h2 id="pos-shortcuts-title" className="text-lg font-bold text-slate-900 dark:text-white">
@@ -368,16 +378,33 @@ export const POS: React.FC = () => {
         </div>
       ) : null}
 
-      <div className="grid min-h-0 flex-1 gap-5 p-5 pt-2 [grid-template-columns:minmax(260px,3fr)_minmax(300px,4fr)_minmax(260px,3fr)]">
-        <section className={panel} aria-label="Product search">
+      <div
+        className={cn(
+          'grid min-h-0 flex-1 gap-3 p-2.5 pt-2 sm:gap-4 sm:p-4 xl:gap-5 xl:p-5 xl:pt-2',
+          /* Mobile / tiny laptop: stack — equal vertical thirds */
+          'grid-cols-1 max-md:[grid-template-rows:minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]',
+          /* Tablet / standard laptop: search left full-height, cart + checkout stacked right */
+          'md:grid-cols-2 md:[grid-template-rows:minmax(0,1fr)_minmax(0,1fr)]',
+          /* Wide desktop: three fluid columns that scale on large / ultrawide monitors */
+          'xl:grid-cols-[minmax(0,1fr)_minmax(0,1.28fr)_minmax(0,1fr)] xl:grid-rows-1',
+          '2xl:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)_minmax(0,1fr)]'
+        )}
+      >
+        <section className={cn(panel, 'min-h-0 md:row-span-2 xl:row-span-1')} aria-label="Product search">
           <ProductSearch />
         </section>
 
-        <section className={panel} aria-label="Shopping cart">
+        <section
+          className={cn(panel, 'min-h-0 md:col-start-2 md:row-start-1 xl:col-auto xl:row-auto')}
+          aria-label="Shopping cart"
+        >
           <Cart />
         </section>
 
-        <section className={panel} aria-label="Checkout">
+        <section
+          className={cn(panel, 'min-h-0 md:col-start-2 md:row-start-2 xl:col-auto xl:row-auto')}
+          aria-label="Checkout"
+        >
           <Checkout />
         </section>
       </div>

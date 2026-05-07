@@ -312,19 +312,19 @@ export const Reports: React.FC = () => {
     : { color: '#0f172a', fontWeight: 700 as const };
 
   return (
-    <div className="custom-scrollbar flex h-full min-h-0 flex-col gap-5 overflow-y-auto p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-black tracking-tight">
-            <BarChart3 className="h-8 w-8 text-primary" strokeWidth={2} />
+    <div className="custom-scrollbar flex h-full min-h-0 w-full min-w-0 flex-col gap-4 overflow-y-auto p-3 sm:gap-5 sm:p-4 md:p-5 lg:p-6">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+        <div className="min-w-0">
+          <h1 className="fluid-h1 flex items-center gap-2 font-black tracking-tight">
+            <BarChart3 className="h-6 w-6 shrink-0 text-primary sm:h-7 sm:w-7 lg:h-8 lg:w-8" strokeWidth={2} />
             Reports
           </h1>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          <p className="mt-1 max-w-2xl text-xs sm:text-sm text-muted-foreground">
             Decision-focused analytics: profit, movers, inventory risk, and customers. Use filters to narrow the window.
           </p>
         </div>
 
-        <div className="flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm dark:border-border/50 dark:bg-card/40">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-3 rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm sm:max-w-5xl sm:p-4 lg:max-w-none lg:p-4 dark:border-border/50 dark:bg-card/40">
           <div className="flex flex-wrap gap-1.5">
             {(
               [
@@ -415,14 +415,14 @@ export const Reports: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1 rounded-xl border border-border/60 bg-muted/25 p-1 dark:bg-muted/15">
+      <div className="-mx-1 flex gap-1 overflow-x-auto rounded-xl border border-border/60 bg-muted/25 p-1 sm:flex-wrap sm:overflow-visible dark:bg-muted/15 [&::-webkit-scrollbar]:h-1">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              'rounded-lg px-4 py-2 text-sm font-semibold transition-colors',
+              'shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:py-2 sm:text-sm',
               tab === t.id ? 'bg-card text-foreground shadow-sm dark:bg-zinc-800' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -432,8 +432,8 @@ export const Reports: React.FC = () => {
       </div>
 
       {tab === 'sales' && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="space-y-4 sm:space-y-5">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
               <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Net revenue</p>
               <p className="mt-2 text-3xl font-black tabular-nums">{formatCurrency(netRevenue)}</p>
@@ -497,7 +497,7 @@ export const Reports: React.FC = () => {
               ))}
             </div>
           ) : null}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
               <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Total revenue</p>
               <p className="mt-2 text-3xl font-black tabular-nums">{formatCurrency(lineRevenue)}</p>
@@ -567,7 +567,7 @@ export const Reports: React.FC = () => {
       )}
 
       {tab === 'products' && (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-4 lg:gap-5 xl:grid-cols-2">
           <TableCard
             title="Top revenue"
             icon={Pill}
@@ -667,8 +667,8 @@ export const Reports: React.FC = () => {
       )}
 
       {tab === 'returns' && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="space-y-4 sm:space-y-5">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
             <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
               <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Returns count</p>
               <p className="mt-2 text-3xl font-black tabular-nums">{returnsInRange.length}</p>
@@ -822,7 +822,7 @@ export const Reports: React.FC = () => {
               expiry with no sales on that batch in the same window.
             </p>
           </div>
-          <div className="grid gap-5 lg:grid-cols-2">
+          <div className="grid gap-4 lg:gap-5 xl:grid-cols-2">
             <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
               <h3 className="mb-3 flex items-center gap-2 text-base font-bold">
                 <Skull className="h-4 w-4 text-muted-foreground" />
@@ -889,7 +889,7 @@ export const Reports: React.FC = () => {
       )}
 
       {tab === 'inventory' && (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-4 lg:gap-5 xl:grid-cols-2">
           <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm dark:bg-card/40">
             <h3 className="mb-3 flex items-center gap-2 text-base font-bold">
               <Package className="h-4 w-4 text-primary" />
@@ -990,7 +990,7 @@ export const Reports: React.FC = () => {
       )}
 
       {tab === 'customers' && (
-        <div className="grid gap-5 lg:grid-cols-3">
+        <div className="grid gap-4 lg:gap-5 lg:grid-cols-2 2xl:grid-cols-3">
           <TableCard
             title="Top customers (spend)"
             icon={Users}

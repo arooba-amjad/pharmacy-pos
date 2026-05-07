@@ -190,3 +190,113 @@
 .cart-item-card:hover {
   transform: translateX(4px);
 }
+
+/* ============================================================
+   Responsive utilities — used across every screen so layouts
+   adapt cleanly from 1280×720 laptops up to 4K monitors.
+   ============================================================ */
+
+/* Page shell: consistent inner padding + readable max-width.
+   Pages that need full bleed (POS) opt out by not using this. */
+.page-shell {
+  width: 100%;
+  margin-inline: auto;
+  max-width: min(1600px, 100%);
+  padding: 1rem;
+}
+@media (min-width: 768px) {
+  .page-shell {
+    padding: 1.25rem 1.5rem;
+  }
+}
+@media (min-width: 1280px) {
+  .page-shell {
+    padding: 1.5rem 2rem;
+  }
+}
+@media (min-width: 1536px) {
+  .page-shell {
+    max-width: 1720px;
+  }
+}
+
+/* Horizontal table-scroll wrapper. Keeps tables usable on
+   narrow screens without crushing columns. */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
+}
+.table-scroll > table {
+  width: 100%;
+  min-width: max-content;
+}
+
+/* Force a sensible minimum width on data tables so they
+   trigger horizontal scroll instead of squishing columns. */
+.data-table {
+  min-width: 720px;
+}
+@media (min-width: 1024px) {
+  .data-table {
+    min-width: 860px;
+  }
+}
+
+/* Fluid heading sizes — readable from 1280×720 up to 4K */
+.fluid-h1 {
+  font-size: clamp(1.5rem, 1.1rem + 1vw, 2.25rem);
+  line-height: 1.15;
+}
+.fluid-h2 {
+  font-size: clamp(1.125rem, 0.95rem + 0.5vw, 1.5rem);
+  line-height: 1.2;
+}
+
+/* Modal frame: never overflows the viewport in either axis. */
+.modal-frame {
+  width: min(100%, 640px);
+  max-height: min(90vh, 720px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+@media (min-width: 768px) {
+  .modal-frame {
+    width: min(100%, 720px);
+  }
+}
+
+/* Card grid presets — used for KPIs / stats rows.
+   Smoothly scales 1→2→3→4 columns instead of jumping. */
+.stat-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+}
+@media (min-width: 768px) {
+  .stat-grid {
+    gap: 1rem;
+  }
+}
+@media (min-width: 1280px) {
+  .stat-grid {
+    gap: 1.25rem;
+  }
+}
+
+/* Hide content on very small heights (short laptops 720p) so
+   the layout still fits without scrolling tiny panels. */
+@media (max-height: 700px) {
+  .hide-on-short {
+    display: none !important;
+  }
+}
+
+/* Keep modals/popovers from poking outside the viewport. */
+.viewport-bound {
+  max-width: calc(100vw - 1.5rem);
+  max-height: calc(100dvh - 1.5rem);
+}

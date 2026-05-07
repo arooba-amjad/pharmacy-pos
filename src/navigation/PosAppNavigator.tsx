@@ -10,6 +10,7 @@ import { POS } from '@/pages/POS';
 import { AuthGate } from '@/components/AuthGate';
 import { useAuthStore } from '@/store/useAuthStore';
 import { usePOSBillingStore } from '@/store/usePOSBillingStore';
+import { useViewport } from '@/hooks/useViewport';
 import { cn } from '@/lib/utils';
 
 const Inventory = lazy(() => import('@/pages/Inventory').then((m) => ({ default: m.Inventory })));
@@ -61,12 +62,25 @@ const PlaceholderScreen: React.FC<{ name: string }> = ({ name }) => (
 
 export const PosAppNavigator: React.FC = () => {
   const { currentScreen, isDarkMode } = useAppStore();
+  const setSidebarForcedCollapsed = useAppStore((s) => s.setSidebarForcedCollapsed);
   const { user, isAuthenticated } = useAuthStore();
   const hydrateReferenceData = usePOSBillingStore((s) => s.hydrateReferenceData);
   const hydratePOSData = usePOSBillingStore((s) => s.hydratePOSData);
   const hydrateBusinessData = usePOSBillingStore((s) => s.hydrateBusinessData);
   const isAccessGranted = !!user && isAuthenticated;
   const [updateMessage, setUpdateMessage] = React.useState<string | null>(null);
+  const { width: viewportWidth } = useViewport();
+
+  // Auto-collapse the sidebar on narrow viewports so content has room to breathe.
+  // Below 1180px we force collapse; above 1280px we release the lock so the user
+  // choice rules. The dead-band prevents flicker around a single threshold.
+  useEffect(() => {
+    if (viewportWidth < 1180) {
+      setSidebarForcedCollapsed(true);
+    } else if (viewportWidth >= 1280) {
+      setSidebarForcedCollapsed(false);
+    }
+  }, [viewportWidth, setSidebarForcedCollapsed]);
 
   useEffect(() => {
     applyThemeToDocument(isDarkMode);
@@ -122,9 +136,9 @@ export const PosAppNavigator: React.FC = () => {
           {updateMessage}
         </div>
       ) : null}
-      <div className="relative z-10 flex min-h-0 flex-1 overflow-hidden">
+      <div className="relative z-10 flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <Sidebar />
-        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white/[0.45] backdrop-blur-md dark:bg-transparent dark:backdrop-blur-none">
+        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden overscroll-contain bg-white/[0.45] backdrop-blur-md dark:bg-transparent dark:backdrop-blur-none">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentScreen}
@@ -165,7 +179,7 @@ export const PosAppNavigator: React.FC = () => {
           </AnimatePresence>
         </main>
       </div>
-      <div className="pointer-events-none fixed bottom-4 right-4 z-0 max-w-[calc(100vw-2rem)] opacity-80 dark:opacity-50">
+      <div className="pointer-events-none fixed bottom-4 right-4 z-0 hidden max-w-[min(calc(100vw-2rem),520px)] opacity-80 xl:block dark:opacity-50">
         <div className="flex flex-wrap items-center justify-end gap-1 rounded-2xl border border-border/80 bg-card/90 px-2 py-1.5 shadow-md shadow-slate-900/[0.06] ring-1 ring-black/[0.02] backdrop-blur-md dark:border-border/60 dark:bg-card/85 dark:shadow-none dark:ring-white/[0.04]">
           <span className="inline-flex items-center gap-1 rounded-lg px-1.5 py-1 text-[10px] font-bold tracking-wide text-muted-foreground">
             <kbd className="rounded bg-muted/90 px-1 py-0.5 font-mono text-[9px] text-foreground">F2</kbd>

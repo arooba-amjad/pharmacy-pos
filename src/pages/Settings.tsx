@@ -172,12 +172,12 @@ export const Settings: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#f6f8fc] dark:bg-zinc-950">
-      <header className="shrink-0 border-b border-slate-200/80 bg-white/80 px-5 py-4 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80 sm:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Control center</h1>
-            <p className="mt-0.5 max-w-xl text-sm text-slate-600 dark:text-zinc-400">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col bg-[#f6f8fc] dark:bg-zinc-950">
+      <header className="shrink-0 border-b border-slate-200/80 bg-white/80 px-3 py-3 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-950/80 sm:px-5 sm:py-4 lg:px-8">
+        <div className="flex flex-wrap items-end justify-between gap-2 sm:gap-3">
+          <div className="min-w-0">
+            <h1 className="fluid-h2 font-bold tracking-tight text-slate-900 dark:text-white">Control center</h1>
+            <p className="mt-0.5 max-w-xl text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
               Tune how PharmaOS feels at the counter. Everything here is grouped so you can move fast without hunting.
             </p>
           </div>
@@ -197,7 +197,7 @@ export const Settings: React.FC = () => {
 
       <div className="flex min-h-0 flex-1 flex-col gap-0 lg:flex-row">
         <nav
-          className="shrink-0 border-b border-slate-200/80 bg-white/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/50 lg:w-[260px] lg:border-b-0 lg:border-r lg:p-4"
+          className="shrink-0 border-b border-slate-200/80 bg-white/60 p-3 dark:border-zinc-800 dark:bg-zinc-950/50 lg:w-[220px] xl:w-[260px] lg:border-b-0 lg:border-r lg:p-4"
           aria-label="Settings categories"
         >
           <ul className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -225,8 +225,8 @@ export const Settings: React.FC = () => {
           </ul>
         </nav>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-3xl">
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-3xl 2xl:max-w-6xl">
             <AnimatePresence mode="wait">
               {active === 'general' && (
                 <motion.div key="general" {...panelMotion} className="space-y-5">

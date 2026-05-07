@@ -80,15 +80,15 @@ export const SalesHistory: React.FC = () => {
   }, [sales, query, dateFrom, dateTo, payFilter]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 bg-background p-4 sm:p-6">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-3 sm:gap-4 bg-background p-3 sm:p-4 md:p-5 lg:p-6">
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Sales history</h1>
-        <p className="mt-0.5 text-sm text-slate-600 dark:text-zinc-400">Invoices and receipts — quick lookup.</p>
+        <h1 className="fluid-h1 font-bold tracking-tight text-slate-900 dark:text-white">Sales history</h1>
+        <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-zinc-400">Invoices and receipts — quick lookup.</p>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="relative min-w-0 flex-1 max-w-xl">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border/80 bg-card p-3 sm:p-4 shadow-sm">
+        <div className="flex w-full min-w-0 flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="relative min-w-0 w-full flex-1 lg:min-w-[12rem]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"

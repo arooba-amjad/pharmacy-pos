@@ -465,16 +465,16 @@ export const Returns: React.FC = () => {
   }, [cart, confirmOpen, focusZone, kind, pickMode, pickQty, pickRow, query, rows, selectedCartIdx, selectedResultIdx]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 bg-slate-50/90 p-4 sm:p-6 dark:bg-zinc-950">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-3 sm:gap-4 bg-slate-50/90 p-3 sm:p-4 md:p-5 lg:p-6 dark:bg-zinc-950">
+      <header className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Returns</h1>
-          <p className="text-sm text-slate-600 dark:text-zinc-400">
+          <h1 className="fluid-h1 font-bold text-slate-900 dark:text-white">Returns</h1>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
             Search a medicine, enter quantity, confirm — stock is added back to your batches (FEFO).{' '}
             <span className="font-semibold text-slate-800 dark:text-zinc-200">No invoices</span> on this screen.
           </p>
         </div>
-        <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="inline-flex shrink-0 rounded-xl border border-slate-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
           <button
             type="button"
             onClick={() => setKind('customer')}
@@ -518,16 +518,16 @@ export const Returns: React.FC = () => {
         </button>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-3 text-xs font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-        <span className="mr-3">F1 Search</span><span className="mr-3">↑↓ Navigate</span><span className="mr-3">Enter Add</span>
-        <span className="mr-3">+/- Qty</span><span className="mr-3">Delete Remove</span><span className="mr-3">F3 Confirm</span>
-        <span className="mr-3">Tab Zone</span><span>Esc Cancel</span>
-        <span className="ml-3 rounded bg-primary/10 px-2 py-0.5 text-primary">Focus: {focusZone}</span>
+      <div className="hide-on-short flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-slate-200 bg-white p-3 text-[11px] sm:text-xs font-semibold text-slate-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+        <span>F1 Search</span><span>↑↓ Navigate</span><span>Enter Add</span>
+        <span>+/- Qty</span><span>Delete Remove</span><span>F3 Confirm</span>
+        <span>Tab Zone</span><span>Esc Cancel</span>
+        <span className="ml-auto rounded bg-primary/10 px-2 py-0.5 text-primary">Focus: {focusZone}</span>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1.3fr_1fr]">
-        <section className="min-h-0 rounded-2xl border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
-          <div className="relative">
+      <div className="grid min-h-0 min-w-0 w-full flex-1 gap-3 lg:gap-4 lg:grid-cols-[1.3fr_1fr]">
+        <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
+          <div className="relative shrink-0">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               ref={searchRef}
@@ -537,7 +537,7 @@ export const Returns: React.FC = () => {
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
             />
           </div>
-          <div className="mt-3 min-h-0 max-h-[calc(100vh-20rem)] overflow-y-auto pr-1">
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
             {rows.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">
                 No matching items.
@@ -575,9 +575,9 @@ export const Returns: React.FC = () => {
           </div>
         </section>
 
-        <section className="min-h-0 rounded-2xl border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
-          <h2 className="text-sm font-black uppercase tracking-wide text-slate-700 dark:text-zinc-200">Return cart</h2>
-          <div className="mt-3 min-h-0 max-h-[calc(100vh-20rem)] overflow-y-auto pr-1">
+        <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/70">
+          <h2 className="shrink-0 text-sm font-black uppercase tracking-wide text-slate-700 dark:text-zinc-200">Return cart</h2>
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
             {cart.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">
                 No items added.
@@ -652,7 +652,7 @@ export const Returns: React.FC = () => {
             )}
           </div>
 
-          <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm dark:bg-zinc-800">
+          <div className="mt-3 shrink-0 rounded-xl bg-slate-50 p-3 text-sm dark:bg-zinc-800">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-slate-600 dark:text-zinc-300">Total</span>
               <span className="font-black tabular-nums text-slate-900 dark:text-white">{formatCurrency(total)}</span>

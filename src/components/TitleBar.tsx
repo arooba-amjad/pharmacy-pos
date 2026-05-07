@@ -15,18 +15,24 @@ export const TitleBar: React.FC = () => {
   }, []);
 
   return (
-    <div className="titlebar z-50 flex shrink-0 items-center justify-between">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="rounded-xl bg-gradient-to-br from-primary/30 via-primary/15 to-teal-400/20 p-2 shadow-sm ring-1 ring-primary/20">
+    <div className="titlebar z-50 flex shrink-0 items-center justify-between gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <div className="shrink-0 rounded-xl bg-gradient-to-br from-primary/30 via-primary/15 to-teal-400/20 p-2 shadow-sm ring-1 ring-primary/20">
           <Pill className="h-4 w-4 text-primary" strokeWidth={2.25} />
         </div>
         <div className="flex min-w-0 flex-col leading-none">
           <span className="truncate text-xs font-bold tracking-tight text-foreground">PharmaOS</span>
-          <span className="mt-0.5 truncate text-[10px] font-medium tracking-wide text-muted-foreground">Pharmacy point of sale</span>
+          <span className="mt-0.5 hidden truncate text-[10px] font-medium tracking-wide text-muted-foreground sm:block">
+            Pharmacy point of sale
+          </span>
         </div>
-        <div className="hidden rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground sm:block">
-          {now.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}{' '}
-          · {now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        <div className="ml-1 hidden shrink-0 truncate rounded-lg border border-border/60 bg-card/60 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground lg:block">
+          {now.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+          {' · '}
+          {now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        </div>
+        <div className="ml-1 hidden shrink-0 rounded-lg border border-border/60 bg-card/60 px-2 py-1 text-[10px] font-semibold text-muted-foreground sm:block lg:hidden">
+          {now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
 

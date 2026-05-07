@@ -565,11 +565,11 @@ export const Purchases: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 bg-slate-50/90 p-4 sm:p-6 dark:bg-zinc-950">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-3 sm:gap-4 bg-slate-50/90 p-3 sm:p-4 md:p-5 lg:p-6 dark:bg-zinc-950">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0">
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Purchases</h1>
-          <p className="text-sm text-slate-600 dark:text-zinc-400">
+          <h1 className="fluid-h1 font-bold text-slate-900 dark:text-white">Purchases</h1>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
             Supplier-centric reordering and goods receiving (GRN).
           </p>
         </div>
@@ -651,7 +651,7 @@ export const Purchases: React.FC = () => {
                 onKeyDown={onSupplierGridKeyDown}
                 className="min-h-0 flex-1 overflow-y-auto outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-2xl"
               >
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                   {supplierStats.map(({ supplier, medicineCount, lowStockCount }, idx) => (
                     <button
                       key={supplier.id}
@@ -904,7 +904,7 @@ export const Purchases: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="relative max-w-xl shrink-0">
+          <div className="relative w-full min-w-0 max-w-full shrink-0 sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"

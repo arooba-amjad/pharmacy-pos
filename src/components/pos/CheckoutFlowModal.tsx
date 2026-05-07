@@ -619,7 +619,7 @@ export const CheckoutFlowModal: React.FC = () => {
       ) : null}
       {open && (
         <motion.div
-          className="fixed inset-0 z-[140] flex items-center justify-center p-4 sm:p-8"
+          className="fixed inset-0 z-[140] flex items-center justify-center p-3 sm:p-6 md:p-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -647,7 +647,7 @@ export const CheckoutFlowModal: React.FC = () => {
             }
             className={cn(
               'relative z-10 w-full overflow-hidden rounded-[24px] border border-slate-200/90 bg-white shadow-2xl dark:border-border/60 dark:bg-card',
-              step === 'receipt' ? 'max-w-lg max-h-[92vh] flex flex-col' : 'max-w-md'
+              'max-w-[min(calc(100vw-1.5rem),32rem)] max-h-[min(92dvh,720px)] flex flex-col'
             )}
             ref={modalPanelRef}
             onKeyDown={(e) => {
@@ -692,7 +692,7 @@ export const CheckoutFlowModal: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 12 }}
                   transition={{ duration: 0.2 }}
-                  className="flex max-h-[min(88vh,560px)] flex-col p-6 sm:p-8"
+                  className="flex min-h-0 flex-1 flex-col p-4 sm:p-6 md:p-8"
                 >
                   <h2 id="checkout-flow-title-customer" className="text-xl font-black tracking-tight text-foreground mb-1">
                     Customer
@@ -816,7 +816,7 @@ export const CheckoutFlowModal: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 12 }}
                   transition={{ duration: 0.2 }}
-                  className="p-6 sm:p-8 outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
+                  className="overflow-y-auto p-4 sm:p-6 md:p-8 outline-none focus-visible:ring-2 focus-visible:ring-primary/25"
                 >
                   <h2 id="checkout-flow-title-charges" className="text-xl font-black tracking-tight text-foreground mb-1">
                     Service charges
@@ -894,7 +894,7 @@ export const CheckoutFlowModal: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -14 }}
                   transition={{ duration: 0.22 }}
-                  className="flex flex-col max-h-[92vh]"
+                  className="flex min-h-0 flex-1 flex-col"
                 >
                   <div className="shrink-0 border-b border-slate-200/80 px-5 py-4 dark:border-border/50">
                     <div className="flex items-center justify-between gap-3">
