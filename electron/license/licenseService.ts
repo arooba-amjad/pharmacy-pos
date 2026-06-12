@@ -140,12 +140,13 @@ export class LicenseService {
     }
 
     const localDaysRemaining = calculateDaysRemaining(stored.expiresAt);
-    if (localDaysRemaining < 0) {
-      return this.invalidResult('expired', stored.expiresAt, stored.clientName, 'License has expired.');
-    }
+
     try {
       ensureSupabaseConfig();
     } catch (error) {
+      if (localDaysRemaining < 0) {
+        return this.invalidResult('expired', stored.expiresAt, stored.clientName, 'License has expired.');
+      }
       return this.invalidResult(
         'inactive',
         stored.expiresAt,

@@ -23051,12 +23051,10 @@ class go {
     if (!e)
       return this.invalidResult("inactive", "", "", "License not activated.");
     const r = ur(e.expiresAt);
-    if (r < 0)
-      return this.invalidResult("expired", e.expiresAt, e.clientName, "License has expired.");
     try {
       ti();
     } catch (n) {
-      return this.invalidResult(
+      return r < 0 ? this.invalidResult("expired", e.expiresAt, e.clientName, "License has expired.") : this.invalidResult(
         "inactive",
         e.expiresAt,
         e.clientName,
